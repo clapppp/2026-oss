@@ -1,0 +1,13 @@
+data/rvl_cdip/
+data/cord/
+checkpoints/
+*.pt
+*.safetensors
+__pycache__/
+*.pyc
+.env
+*.db
+.env.local
+.venv/
+data/
+.claude/
