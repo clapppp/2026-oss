@@ -1,0 +1,19 @@
+# Python
+2026-oss-project-ai/venv/
+2026-oss-project-ai/__pycache__/
+2026-oss-project-ai/**/__pycache__/
+2026-oss-project-ai/**/*.pyc
+2026-oss-project-ai/*.db
+2026-oss-project-ai/.paddleocr/
+
+# Node
+2026-oss-fe-general/node_modules/
+2026-oss-fe-general/.next/
+
+# 테스트 이미지 (용량 큼)
+테스트/
+
+# 기타
+.env
+.env.local
+*.log
