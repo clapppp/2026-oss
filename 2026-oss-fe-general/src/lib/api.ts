@@ -3,8 +3,6 @@ const BASE = '/api/proxy'
 export interface SchemaField {
   name: string
   type: 'string' | 'number' | 'date' | 'array'
-  required?: boolean
-  rule?: string
 }
 
 export interface Schema {
@@ -42,9 +40,10 @@ export const api = {
   health: () => request<{ status: string }>('/health'),
 
   // Admin
-  extractSchema: (file: File) => {
+  extractSchema: (file: File, engine: 'ocr' | 'vlm' = 'ocr') => {
     const form = new FormData()
     form.append('file', file)
+    form.append('engine', engine)
     return request<{ extract_id: string; fields: SchemaField[] }>('/admin/extract-schema', { method: 'POST', body: form })
   },
   saveSchema: (extract_id: string, name: string, fields: SchemaField[]) =>
@@ -58,9 +57,10 @@ export const api = {
     request<{ detail: string }>(`/admin/schema/${id}`, { method: 'DELETE' }),
 
   // User
-  submit: (file: File) => {
+  submit: (file: File, engine: 'ocr' | 'vlm' = 'ocr') => {
     const form = new FormData()
     form.append('file', file)
+    form.append('engine', engine)
     return request<SubmitResult>('/user/submit', { method: 'POST', body: form })
   },
 }

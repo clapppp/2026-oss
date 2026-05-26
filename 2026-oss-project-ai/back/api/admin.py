@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from back.database import get_db
@@ -13,17 +13,23 @@ router = APIRouter()
 _pending_data: dict[str, dict] = {}
 
 
-def get_admin_pipeline():
+def get_admin_pipeline(engine: str):
+    if engine == "vlm":
+        from ai.pipeline.vlm import VLMAdminPipeline
+        return VLMAdminPipeline()
     from ai.pipeline.admin import AdminPipeline
     return AdminPipeline()
 
 
 @router.post("/extract-schema", response_model=ExtractedSchema)
-async def extract_schema(file: UploadFile = File(...)):
-    """모범 문서 JPG를 받아 필드 목록을 자동 추출. 텍스트 임베딩과 이미지는 서버에 임시 보관."""
+async def extract_schema(
+    file: UploadFile = File(...),
+    engine: str = Form("ocr"),
+):
+    """모범 문서 JPG를 받아 필드 목록을 자동 추출. engine: 'ocr' | 'vlm'"""
     image_bytes = await file.read()
 
-    pipeline = get_admin_pipeline()
+    pipeline = get_admin_pipeline(engine)
     try:
         fields, text_embedding = pipeline.extract_schema(image_bytes)
     except ValueError as e:

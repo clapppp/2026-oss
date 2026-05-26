@@ -22,3 +22,6 @@ pymupdf>=1.24.0
 # OCR
 paddlepaddle==2.6.2
 paddleocr==2.8.1
+
+# VLM
+qwen-vl-utils>=0.0.8

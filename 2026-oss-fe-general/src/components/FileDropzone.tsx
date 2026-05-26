@@ -52,7 +52,7 @@ export default function FileDropzone({ onFile, disabled, label = '문서 이미�
       <div className="text-3xl mb-3">📁</div>
       <p className="text-sm text-[var(--muted)]">{label}</p>
       <p className="text-xs text-[var(--muted)] mt-1">jpg, png, webp 지원</p>
-      <input ref={inputRef} type="file" accept="image/*,.heic,.heif" className="hidden" onChange={onChange} disabled={disabled} onClick={(e) => e.stopPropagation()} />
+      <input ref={inputRef} type="file" accept="image/*,.heic,.heif" className="sr-only" onChange={onChange} disabled={disabled} onClick={(e) => e.stopPropagation()} />
     </div>
   )
 }

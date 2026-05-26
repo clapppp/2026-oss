@@ -1,12 +1,14 @@
 """
-텍스트 임베더 / LLM 공유 싱글톤 + LLM 응답 파싱 유틸.
-admin, user 파이프라인이 동일 인스턴스를 재사용한다.
+텍스트 임베더 / LLM / VLM 공유 싱글톤 + 응답 파싱 유틸.
+8GB VRAM 제약으로 LLM과 VLM은 동시에 로드할 수 없다.
+엔진 전환 시 기존 모델을 해제하고 새 모델을 로드한다.
 """
 
 import json
 
 _text_embedder = None
 _llm = None
+_vlm = None
 
 
 def get_text_embedder():
@@ -17,12 +19,44 @@ def get_text_embedder():
     return _text_embedder
 
 
+def _release_llm():
+    global _llm
+    if _llm is not None:
+        import gc, torch
+        del _llm
+        _llm = None
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+
+def _release_vlm():
+    global _vlm
+    if _vlm is not None:
+        import gc, torch
+        del _vlm
+        _vlm = None
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+
 def get_llm():
     global _llm
     if _llm is None:
+        _release_vlm()
         from ai.llm.model import DocumentLLM
         _llm = DocumentLLM()
     return _llm
+
+
+def get_vlm():
+    global _vlm
+    if _vlm is None:
+        _release_llm()
+        from ai.llm.vlm import DocumentVLM
+        _vlm = DocumentVLM()
+    return _vlm
 
 
 def parse_llm_json(raw: str) -> dict:

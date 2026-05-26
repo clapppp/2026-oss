@@ -4,9 +4,11 @@ import FileDropzone from '@/components/FileDropzone'
 import { api, SubmitResult } from '@/lib/api'
 
 type State = 'idle' | 'loading' | 'done' | 'error'
+type Engine = 'ocr' | 'vlm'
 
 export default function DemoPage() {
   const [state, setState] = useState<State>('idle')
+  const [engine, setEngine] = useState<Engine>('ocr')
   const [preview, setPreview] = useState<string | null>(null)
   const [result, setResult] = useState<SubmitResult | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
@@ -17,7 +19,7 @@ export default function DemoPage() {
     setResult(null)
     setErrorMsg('')
     try {
-      const res = await api.submit(file)
+      const res = await api.submit(file, engine)
       setResult(res)
       setState('done')
     } catch (e) {
@@ -40,6 +42,24 @@ export default function DemoPage() {
         <p className="text-[var(--muted)] text-sm mt-1">
           문서 이미지를 업로드하면 AI가 스키마를 자동 선택하고 필드를 추출합니다.
         </p>
+      </div>
+
+      {/* 엔진 선택 */}
+      <div className="flex gap-2">
+        {(['ocr', 'vlm'] as const).map(e => (
+          <button
+            key={e}
+            onClick={() => setEngine(e)}
+            disabled={state === 'loading'}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 ${
+              engine === e
+                ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                : 'border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/50'
+            }`}
+          >
+            {e === 'ocr' ? 'OCR + LLM' : 'VLM (Qwen2.5-VL)'}
+          </button>
+        ))}
       </div>
 
       {state === 'idle' || state === 'loading' ? (

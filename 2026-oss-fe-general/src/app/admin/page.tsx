@@ -5,6 +5,7 @@ import { api, SchemaField, Schema } from '@/lib/api'
 
 type Tab = 'register' | 'schemas'
 type RegisterState = 'idle' | 'extracting' | 'review' | 'saving' | 'saved' | 'error'
+type Engine = 'ocr' | 'vlm'
 
 const FIELD_TYPES = ['string', 'number', 'date', 'array'] as const
 
@@ -13,16 +14,19 @@ export default function AdminPage() {
 
   // --- Register tab ---
   const [regState, setRegState] = useState<RegisterState>('idle')
+  const [engine, setEngine] = useState<Engine>('ocr')
   const [fields, setFields] = useState<SchemaField[]>([])
   const [schemaName, setSchemaName] = useState('')
   const [extractId, setExtractId] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [preview, setPreview] = useState<string | null>(null)
 
   const handleExampleFile = async (file: File) => {
+    setPreview(URL.createObjectURL(file))
     setRegState('extracting')
     setErrorMsg('')
     try {
-      const res = await api.extractSchema(file)
+      const res = await api.extractSchema(file, engine)
       setExtractId(res.extract_id)
       setFields(res.fields)
       setRegState('review')
@@ -36,7 +40,7 @@ export default function AdminPage() {
     setFields(prev => prev.map((f, idx) => idx === i ? { ...f, ...patch } : f))
   }
 
-  const addField = () => setFields(prev => [...prev, { name: '', type: 'string', required: true, rule: '' }])
+  const addField = () => setFields(prev => [...prev, { name: '', type: 'string' }])
   const removeField = (i: number) => setFields(prev => prev.filter((_, idx) => idx !== i))
 
   const saveSchema = async () => {
@@ -60,6 +64,7 @@ export default function AdminPage() {
     setSchemaName('')
     setExtractId('')
     setErrorMsg('')
+    setPreview(null)
   }
 
   // --- Schemas tab ---
@@ -113,6 +118,22 @@ export default function AdminPage() {
         <div className="space-y-6">
           {(regState === 'idle' || regState === 'error') && (
             <>
+              {/* 엔진 선택 */}
+              <div className="flex gap-2">
+                {(['ocr', 'vlm'] as const).map(e => (
+                  <button
+                    key={e}
+                    onClick={() => setEngine(e)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                      engine === e
+                        ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                        : 'border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/50'
+                    }`}
+                  >
+                    {e === 'ocr' ? 'OCR + LLM' : 'VLM (Qwen2.5-VL)'}
+                  </button>
+                ))}
+              </div>
               <FileDropzone
                 onFile={handleExampleFile}
                 label="모범 문서 이미지를 업로드하면 AI가 필드 스키마를 자동 추출합니다"
@@ -140,59 +161,53 @@ export default function AdminPage() {
                 {fields.length}개 필드가 추출되었습니다. 내용을 검토하고 수정 후 저장하세요.
               </div>
 
-              {/* Schema name */}
-              <div>
-                <label className="block text-sm font-medium mb-1">스키마 이름</label>
-                <input
-                  value={schemaName}
-                  onChange={e => setSchemaName(e.target.value)}
-                  placeholder="예: 소득증명서"
-                  className="w-full bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
-                />
-              </div>
+              <div className="grid sm:grid-cols-2 gap-5">
+                {/* 업로드 이미지 미리보기 */}
+                {preview && (
+                  <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+                    <p className="text-xs text-[var(--muted)] mb-2">업로드된 모범 문서</p>
+                    <img src={preview} alt="preview" className="w-full rounded object-contain max-h-80" />
+                  </div>
+                )}
 
-              {/* Fields */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">필드 목록</p>
-                  <button onClick={addField} className="text-xs text-[var(--accent)] hover:underline">+ 필드 추가</button>
-                </div>
-
-                {fields.map((field, i) => (
-                  <div key={i} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
-                    <div className="flex gap-3">
-                      <input
-                        value={field.name}
-                        onChange={e => updateField(i, { name: e.target.value })}
-                        placeholder="필드명"
-                        className="flex-1 bg-[var(--background)] border border-[var(--border)] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)]"
-                      />
-                      <select
-                        value={field.type}
-                        onChange={e => updateField(i, { type: e.target.value as SchemaField['type'] })}
-                        className="bg-[var(--background)] border border-[var(--border)] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)]"
-                      >
-                        {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                      <label className="flex items-center gap-1.5 text-sm text-[var(--muted)] whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={field.required}
-                          onChange={e => updateField(i, { required: e.target.checked })}
-                          className="accent-[var(--accent)]"
-                        />
-                        필수
-                      </label>
-                      <button onClick={() => removeField(i)} className="text-[var(--muted)] hover:text-red-400 transition-colors">✕</button>
-                    </div>
+                {/* Schema name + Fields */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">스키마 이름</label>
                     <input
-                      value={field.rule ?? ''}
-                      onChange={e => updateField(i, { rule: e.target.value })}
-                      placeholder="검증 규칙 (예: YYYY-MM-DD 형식)"
-                      className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-1.5 text-sm text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+                      value={schemaName}
+                      onChange={e => setSchemaName(e.target.value)}
+                      placeholder="예: 소득증명서"
+                      className="w-full bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
                     />
                   </div>
-                ))}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">필드 목록</p>
+                      <button onClick={addField} className="text-xs text-[var(--accent)] hover:underline">+ 필드 추가</button>
+                    </div>
+
+                    {fields.map((field, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <input
+                          value={field.name}
+                          onChange={e => updateField(i, { name: e.target.value })}
+                          placeholder="필드명"
+                          className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)]"
+                        />
+                        <select
+                          value={field.type}
+                          onChange={e => updateField(i, { type: e.target.value as SchemaField['type'] })}
+                          className="bg-[var(--card)] border border-[var(--border)] rounded px-2 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)]"
+                        >
+                          {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <button onClick={() => removeField(i)} className="text-[var(--muted)] hover:text-red-400 transition-colors">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3">
