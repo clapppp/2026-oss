@@ -38,9 +38,9 @@ if [ ! -f "$BE/.env" ]; then
   warn ".env 파일이 없습니다. 2026-oss-be/.env 에 ANTHROPIC_API_KEY 를 설정하세요."
 fi
 
-info "백엔드 시작 (포트 8000)..."
+info "백엔드 시작 (포트 4000)..."
 cd "$BE"
-"$BE/venv/bin/uvicorn" main:app --host 0.0.0.0 --port 8000 &
+"$BE/venv/bin/uvicorn" main:app --host 0.0.0.0 --port 4000 &
 BE_PID=$!
 
 # ════════════════════════════════════════════
@@ -60,9 +60,9 @@ FE_PID=$!
 
 # ════════════════════════════════════════════
 info "✅ ArtPass 실행 중"
-info "   프론트엔드: http://localhost:5173"
-info "   백엔드 API: http://localhost:8000"
-info "   API 문서:   http://localhost:8000/docs"
+info "   프론트엔드: http://localhost:3000"
+info "   백엔드 API: http://localhost:4000"
+info "   API 문서:   http://localhost:4000/docs"
 info "종료하려면 Ctrl+C 를 누르세요."
 
 wait
