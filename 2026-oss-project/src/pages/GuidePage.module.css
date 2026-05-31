@@ -1,0 +1,512 @@
+/* ── 기본 ─────────────────────────────────── */
+.page {
+  width: 100%;
+}
+
+.inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ── 페이지 헤더 ──────────────────────────── */
+.pageHeader {
+  background: linear-gradient(135deg, #1756BD 0%, #0B2158 100%);
+  padding: 64px 0 56px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+.pageTitle {
+  font-size: 38px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.04em;
+  margin: 0 0 14px;
+}
+
+.pageDesc {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── 섹션 공통 ───────────────────────────── */
+.section {
+  background: var(--krds-bg, #fff);
+  padding: 72px 0;
+}
+
+.sectionAlt {
+  background: var(--krds-bg-subtle, #f8f9fa);
+  padding: 72px 0;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--krds-primary, #1756BD);
+  background: var(--krds-primary-light, #EBF2FF);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+}
+
+.sectionTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--krds-text-1, #212529);
+  letter-spacing: -0.03em;
+  margin: 0 0 28px;
+}
+
+/* ── 서비스 소개 ─────────────────────────── */
+.introBlock {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 64px;
+  align-items: center;
+}
+
+.introText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.bodyText {
+  font-size: 15px;
+  color: var(--krds-text-2, #495057);
+  line-height: 1.8;
+  margin: 0 0 14px;
+}
+
+.bodyText strong {
+  color: var(--krds-text-1, #212529);
+  font-weight: 700;
+}
+
+.ctaBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px 22px;
+  background: var(--krds-primary, #1756BD);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.ctaBtn:hover {
+  background: var(--krds-primary-hover, #1248A4);
+  box-shadow: 0 4px 12px rgba(23, 86, 189, 0.35);
+}
+
+/* 시각적 카드 */
+.introVisual {
+  display: flex;
+  justify-content: center;
+}
+
+.visualCard {
+  width: 100%;
+  max-width: 320px;
+  background: #fff;
+  border: 1px solid var(--krds-border, #ced4da);
+  border-radius: 12px;
+  padding: 32px 28px;
+  box-shadow: 0 8px 32px rgba(11, 33, 88, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.visualCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #1756BD, #0B2158);
+}
+
+.visualCardBadge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--krds-primary, #1756BD);
+  background: var(--krds-primary-light, #EBF2FF);
+  padding: 4px 10px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.visualCardName {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--krds-text-1, #212529);
+  letter-spacing: -0.02em;
+}
+
+.visualCardField {
+  font-size: 14px;
+  color: var(--krds-text-2, #495057);
+}
+
+.visualCardMeta {
+  font-size: 12px;
+  color: var(--krds-text-disabled, #adb5bd);
+  margin-top: 4px;
+}
+
+/* ── 주요 기능 ───────────────────────────── */
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.featureCard {
+  background: var(--krds-bg, #fff);
+  border: 1px solid var(--krds-border, #ced4da);
+  border-radius: 10px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.featureCard:hover {
+  border-color: var(--krds-primary, #1756BD);
+  box-shadow: 0 4px 16px rgba(23, 86, 189, 0.12);
+}
+
+.featureIcon {
+  width: 52px;
+  height: 52px;
+  background: var(--krds-primary-light, #EBF2FF);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--krds-primary, #1756BD);
+}
+
+.featureTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--krds-text-1, #212529);
+  margin: 0;
+}
+
+.featureDesc {
+  font-size: 13px;
+  color: var(--krds-text-3, #6c757d);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── 이용 방법 ───────────────────────────── */
+.howToList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.howToItem {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.howToStep {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--krds-primary, #1756BD);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  position: relative;
+  z-index: 1;
+}
+
+.howToLine {
+  position: absolute;
+  left: 21px;
+  top: 44px;
+  width: 2px;
+  height: 40px;
+  background: var(--krds-border, #ced4da);
+}
+
+.howToBody {
+  padding: 10px 0 40px;
+}
+
+.howToItem:last-child .howToBody {
+  padding-bottom: 0;
+}
+
+.howToTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--krds-text-1, #212529);
+  margin: 0 0 6px;
+}
+
+.howToDesc {
+  font-size: 14px;
+  color: var(--krds-text-3, #6c757d);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── FAQ ─────────────────────────────────── */
+.faqList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.faqItem {
+  background: var(--krds-bg, #fff);
+  border: 1px solid var(--krds-border, #ced4da);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.faqQ {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--krds-text-1, #212529);
+  border-bottom: 1px solid var(--krds-bg-muted, #f1f3f5);
+  margin: 0;
+}
+
+.faqA {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 24px;
+  font-size: 14px;
+  color: var(--krds-text-2, #495057);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.faqQMark {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--krds-primary, #1756BD);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.faqAMark {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--krds-bg-muted, #f1f3f5);
+  color: var(--krds-text-3, #6c757d);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── 개발자 크레딧 ───────────────────────── */
+.credits {
+  background: #061529;
+  padding: 72px 0 80px;
+}
+
+.badgeLight {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+}
+
+.creditsTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+}
+
+.creditsDesc {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.7;
+  margin: 0 0 40px;
+}
+
+.creditsDesc strong {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.memberGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.memberCard {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.memberCard:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(23, 86, 189, 0.5);
+}
+
+.memberAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(23, 86, 189, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.memberInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.memberName {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.memberRole {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.memberGithub {
+  font-size: 11px;
+  color: var(--krds-primary, #1756BD);
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.creditsMeta {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 24px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  text-align: center;
+}
+
+/* ── 반응형 ──────────────────────────────── */
+@media (max-width: 1024px) {
+  .featureGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .memberGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .introBlock {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .introVisual {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .inner {
+    padding: 0 20px;
+  }
+
+  .pageTitle {
+    font-size: 28px;
+  }
+
+  .sectionTitle {
+    font-size: 22px;
+  }
+
+  .section,
+  .sectionAlt,
+  .credits {
+    padding: 48px 0;
+  }
+
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .memberGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

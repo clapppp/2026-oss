@@ -1,0 +1,64 @@
+/* ─────────────────────────────────────────
+   KRDS 범정부 디자인 시스템 — 전역 기본값
+   ───────────────────────────────────────── */
+
+:root {
+  /* Primary */
+  --krds-primary:        #1756BD;
+  --krds-primary-hover:  #1248A4;
+  --krds-primary-active: #0D3A88;
+  --krds-primary-light:  #EBF2FF;
+
+  /* Text */
+  --krds-text-1: #212529;
+  --krds-text-2: #495057;
+  --krds-text-3: #6c757d;
+  --krds-text-disabled: #adb5bd;
+
+  /* Border */
+  --krds-border:        #ced4da;
+  --krds-border-strong: #8a949e;
+
+  /* Background */
+  --krds-bg:        #ffffff;
+  --krds-bg-subtle: #f8f9fa;
+  --krds-bg-muted:  #f1f3f5;
+
+  /* Typography */
+  font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--krds-text-1);
+  background: var(--krds-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100svh;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: inherit;
+  color: var(--krds-text-1);
+}
+
+p {
+  margin: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}

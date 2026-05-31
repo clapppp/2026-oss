@@ -1,0 +1,19 @@
+.row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 490px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  min-width: 100px;
+}
+
+.value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8f8f8f;
+}

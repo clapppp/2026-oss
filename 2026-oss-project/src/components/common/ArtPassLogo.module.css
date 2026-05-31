@@ -1,0 +1,37 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  user-select: none;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.wordArt {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--krds-primary, #1756BD);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-family: inherit;
+}
+
+.wordPass {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--krds-text-1, #212529);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-family: inherit;
+}
+
+@media (max-width: 768px) {
+  .wordArt,
+  .wordPass {
+    font-size: 17px;
+  }
+}

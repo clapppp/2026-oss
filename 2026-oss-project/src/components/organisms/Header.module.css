@@ -1,0 +1,244 @@
+/* ─────────────────────────────────────────
+   KRDS 범정부 디자인 시스템 — Header
+   ───────────────────────────────────────── */
+
+.header {
+  width: 100%;
+  background: var(--krds-bg, #ffffff);
+  border-bottom: 1px solid var(--krds-border, #ced4da);
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* 최대 너비 컨테이너 */
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* ── 유틸리티 리스트 (identity bar 오른쪽) */
+.utilityList {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+
+.utilityLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.utilityIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--krds-text-2, #495057);
+}
+
+.utilityLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--krds-text-2, #495057);
+  white-space: nowrap;
+}
+
+.utilityLink:hover .utilityIcon,
+.utilityLink:hover .utilityLabel {
+  color: var(--krds-primary, #1756BD);
+}
+
+/* ── 건너뛰기 링크 ────────────────────── */
+.skipNav {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  padding: 8px 16px;
+  background: var(--krds-primary, #1756BD);
+  color: var(--krds-bg, #ffffff);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  z-index: 9999;
+  border-radius: 0 0 4px 0;
+  transition: top 0.1s;
+}
+
+.skipNav:focus {
+  top: 0;
+}
+
+/* ── 아이덴티티 바 (로고 + 유틸리티) ─── */
+.identityBar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  gap: 10px;
+}
+
+.logoImg {
+  height: 32px;
+  width: auto;
+}
+
+.logoText {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--krds-text-1, #212529);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* ── GNB ──────────────────────────────── */
+.gnb {
+  background: var(--krds-bg, #ffffff);
+  border-top: 1px solid var(--krds-border, #ced4da);
+  height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.gnbList {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.gnbItem {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.gnbLink {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--krds-text-1, #212529);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.gnbLink:hover {
+  color: var(--krds-primary, #1756BD);
+}
+
+.gnbActive {
+  color: var(--krds-primary, #1756BD);
+  border-bottom-color: var(--krds-primary, #1756BD);
+}
+
+/* ── 모바일 햄버거 ────────────────────── */
+.menuToggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 10px;
+  margin-right: 8px;
+}
+
+.hamburger {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--krds-text-1, #212529);
+  border-radius: 1px;
+  transition: background 0.15s;
+}
+
+/* ── 반응형 ───────────────────────────── */
+@media (max-width: 768px) {
+  .inner {
+    padding: 0 20px;
+  }
+
+  .identityBar {
+    height: 52px;
+  }
+
+  .logoText {
+    font-size: 18px;
+  }
+
+  .gnb {
+    height: auto;
+    position: relative;
+  }
+
+  .menuToggle {
+    display: flex;
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .gnbList {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+    background: var(--krds-bg, #ffffff);
+    border-top: 1px solid var(--krds-border, #ced4da);
+    padding: 8px 0;
+  }
+
+  .gnbOpen {
+    display: flex;
+  }
+
+  .gnbItem {
+    height: auto;
+  }
+
+  .gnbLink {
+    height: auto;
+    padding: 12px 20px;
+    border-bottom: none;
+    border-left: 3px solid transparent;
+  }
+
+  .gnbActive {
+    border-left-color: var(--krds-primary, #1756BD);
+    border-bottom-color: transparent;
+  }
+}

@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+
+# ── Frontend (2026-oss-project) ──────────────────
+2026-oss-project/node_modules
+2026-oss-project/dist
+2026-oss-project/dist-ssr
+2026-oss-project/.env
+2026-oss-project/.env.local
+2026-oss-project/.env.*.local
+2026-oss-project/*.local
+
+# ── Backend (2026-oss-be) ────────────────────────
+2026-oss-be/venv
+2026-oss-be/__pycache__
+2026-oss-be/**/__pycache__
+2026-oss-be/**/*.pyc
+2026-oss-be/artpass.db
+2026-oss-be/.env
+
+# 테스트 파일
+test-files/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.sw?

@@ -1,0 +1,261 @@
+/* ─────────────────────────────────────────
+   KRDS 범정부 디자인 시스템 — Button
+   ───────────────────────────────────────── */
+
+/* 토큰 */
+:root {
+  --btn-primary-bg: #1756BD;
+  --btn-primary-bg-hover: #1248A4;
+  --btn-primary-bg-active: #0D3A88;
+  --btn-primary-text: #ffffff;
+
+  --btn-secondary-border: #1756BD;
+  --btn-secondary-text: #1756BD;
+  --btn-secondary-bg-hover: #EBF2FF;
+  --btn-secondary-bg-active: #D6E6FF;
+
+  --btn-tertiary-border: #6b6f7b;
+  --btn-tertiary-text: #343539;
+  --btn-tertiary-bg-hover: #f1f2f4;
+  --btn-tertiary-bg-active: #e3e5e8;
+
+  --btn-ghost-text: #1756BD;
+  --btn-ghost-bg-hover: #EBF2FF;
+  --btn-ghost-bg-active: #D6E6FF;
+
+  --btn-danger-bg: #c0392b;
+  --btn-danger-bg-hover: #a93226;
+  --btn-danger-bg-active: #922b21;
+  --btn-danger-text: #ffffff;
+
+  --btn-disabled-bg: #d1d5db;
+  --btn-disabled-text: #9ca3af;
+  --btn-disabled-border: #d1d5db;
+
+  --btn-focus-outline: #1756BD;
+  --btn-focus-outline-offset: 2px;
+}
+
+/* ── 기본 ─────────────────────────────── */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, opacity 0.15s ease;
+  position: relative;
+  outline: none;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--btn-focus-outline);
+  outline-offset: var(--btn-focus-outline-offset);
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+/* ── 크기 ─────────────────────────────── */
+.xl {
+  height: 56px;
+  padding: 0 24px;
+  font-size: 18px;
+  border-radius: 6px;
+  gap: 8px;
+}
+
+.lg {
+  height: 48px;
+  padding: 0 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  gap: 7px;
+}
+
+.md {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 4px;
+  gap: 6px;
+}
+
+.sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 4px;
+  gap: 5px;
+}
+
+/* ── Variant: primary ─────────────────── */
+.primary {
+  background-color: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--btn-primary-bg-hover);
+  border-color: var(--btn-primary-bg-hover);
+}
+
+.primary:active:not(:disabled) {
+  background-color: var(--btn-primary-bg-active);
+  border-color: var(--btn-primary-bg-active);
+}
+
+/* ── Variant: secondary (outlined) ───── */
+.secondary {
+  background-color: transparent;
+  border-color: var(--btn-secondary-border);
+  color: var(--btn-secondary-text);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--btn-secondary-bg-hover);
+}
+
+.secondary:active:not(:disabled) {
+  background-color: var(--btn-secondary-bg-active);
+}
+
+/* ── Variant: tertiary (outlined gray) ─ */
+.tertiary {
+  background-color: transparent;
+  border-color: var(--btn-tertiary-border);
+  color: var(--btn-tertiary-text);
+}
+
+.tertiary:hover:not(:disabled) {
+  background-color: var(--btn-tertiary-bg-hover);
+}
+
+.tertiary:active:not(:disabled) {
+  background-color: var(--btn-tertiary-bg-active);
+}
+
+/* ── Variant: ghost (text only) ──────── */
+.ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--btn-ghost-text);
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--btn-ghost-bg-hover);
+}
+
+.ghost:active:not(:disabled) {
+  background-color: var(--btn-ghost-bg-active);
+}
+
+/* ── Variant: danger ─────────────────── */
+.danger {
+  background-color: var(--btn-danger-bg);
+  border-color: var(--btn-danger-bg);
+  color: var(--btn-danger-text);
+}
+
+.danger:hover:not(:disabled) {
+  background-color: var(--btn-danger-bg-hover);
+  border-color: var(--btn-danger-bg-hover);
+}
+
+.danger:active:not(:disabled) {
+  background-color: var(--btn-danger-bg-active);
+  border-color: var(--btn-danger-bg-active);
+}
+
+/* ── Disabled ─────────────────────────── */
+.button:disabled {
+  background-color: var(--btn-disabled-bg);
+  border-color: var(--btn-disabled-border);
+  color: var(--btn-disabled-text);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.secondary:disabled,
+.tertiary:disabled {
+  background-color: transparent;
+}
+
+.ghost:disabled {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+/* ── fullWidth ────────────────────────── */
+.fullWidth {
+  width: 100%;
+}
+
+/* ── Icon ─────────────────────────────── */
+.iconLeft,
+.iconRight {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.xl .iconLeft,
+.xl .iconRight {
+  width: 24px;
+  height: 24px;
+}
+
+.lg .iconLeft,
+.lg .iconRight {
+  width: 22px;
+  height: 22px;
+}
+
+.md .iconLeft,
+.md .iconRight {
+  width: 18px;
+  height: 18px;
+}
+
+.sm .iconLeft,
+.sm .iconRight {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Loading ──────────────────────────── */
+.loading {
+  cursor: wait;
+}
+
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Text ─────────────────────────────── */
+.text {
+  line-height: 1;
+}
