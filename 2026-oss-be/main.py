@@ -224,6 +224,11 @@ def login(body: LoginBody):
     return ok({"user": user_schema(user), "token": token})
 
 
+@app.post("/api/auth/logout")
+def logout():
+    return ok(None)
+
+
 @app.post("/api/auth/signup")
 def signup(body: SignupBody):
     conn = get_db()
