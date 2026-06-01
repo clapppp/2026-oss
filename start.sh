@@ -27,11 +27,12 @@ info "백엔드 환경 확인 중..."
 if [ ! -d "$BE/venv" ]; then
   info "가상환경 생성 중..."
   python3 -m venv "$BE/venv"
+  python3 -m ensurepip --upgrade 2>/dev/null || true
+  "$BE/venv/bin/python3" -m ensurepip --upgrade 2>/dev/null || true
 fi
 
 info "패키지 설치 확인 중..."
-PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 \
-  "$BE/venv/bin/pip" install -q -r "$BE/requirements.txt"
+"$BE/venv/bin/python3" -m pip install -q -r "$BE/requirements.txt"
 
 # .env 없으면 경고
 if [ ! -f "$BE/.env" ]; then
