@@ -27,3 +27,4 @@ test-files/
 .idea
 *.suo
 *.sw?
+*.key
