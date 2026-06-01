@@ -7,7 +7,7 @@ import anthropic
 
 CATEGORY_RULES = {
     "문학": {
-        "min_count": 5,
+        "min_count": 1,
         "required_fields": ["title", "publisher", "genre", "publishDate", "volume", "character"],
         "field_labels": {
             "title": "작품명",
@@ -24,7 +24,7 @@ CATEGORY_RULES = {
         "special_rules": "소설/동화/청소년소설의 경우 장편 1편 또는 단편·기타 3편 이상 필요.",
     },
     "연극": {
-        "min_count": 3,
+        "min_count": 1,
         "required_fields": ["title", "venue", "date", "role"],
         "field_labels": {
             "title": "공연명",

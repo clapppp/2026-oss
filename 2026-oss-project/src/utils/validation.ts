@@ -52,22 +52,8 @@ export function validateApplicationStep2(
     if (!fields || !meta) continue;
     const entries = categoryForms[cat] ?? [{}];
 
-    if (cat === "문학") {
-      const required = getLiteratureRequiredCount(entries);
-      if (required !== null && entries.length < required) {
-        return `[문학] 실적을 ${required}편 이상 입력해 주세요. (현재 ${entries.length}편)`;
-      }
-    } else if (cat === "만화") {
-      const required = hasManhwaSerialException(entries) ? 1 : meta.minCount;
-      if (entries.length < required) {
-        return required === 1
-          ? `[만화] 연재 실적 1편을 입력해 주세요.`
-          : `[만화] 실적을 ${meta.minCount}편 이상 입력해 주세요. (현재 ${entries.length}편)`;
-      }
-    } else {
-      if (entries.length < meta.minCount) {
-        return `[${cat}] 실적을 ${meta.minCount}${meta.unit} 이상 입력해 주세요. (현재 ${entries.length}${meta.unit})`;
-      }
+    if (entries.length < meta.minCount) {
+      return `[${cat}] 실적을 ${meta.minCount}${meta.unit} 이상 입력해 주세요. (현재 ${entries.length}${meta.unit})`;
     }
 
     for (let i = 0; i < entries.length; i++) {

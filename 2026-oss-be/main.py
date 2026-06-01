@@ -311,7 +311,7 @@ def review_application(
 @app.post("/api/applications")
 async def submit_application(request: Request, current_user: dict = Depends(get_current_user)):
     form = await request.form()
-    raw_meta = form.get("meta")
+    raw_meta = form.get("meta") or form.get("data")
     if not raw_meta:
         raise HTTPException(status_code=422, detail="meta 필드가 없습니다")
 
