@@ -122,14 +122,12 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }: Log
           </Button>
         </form>
 
-        {/* mock 모드 계정 힌트 */}
-        {import.meta.env.VITE_USE_MOCK === "true" && (
-          <div className={styles.demoHint}>
-            <span className={styles.demoHintLabel}>테스트 계정</span>
-            <span>사용자: <code>demo@artpass.kr</code> / <code>password1!</code></span>
-            <span>관리자: <code>admin@artpass.kr</code> / <code>admin1!</code></span>
-          </div>
-        )}
+        {/* 테스트 계정 힌트 */}
+        <div className={styles.demoHint}>
+          <span className={styles.demoHintLabel}>테스트 계정</span>
+          <span>사용자: <code>demo@artpass.kr</code> / <code>password1!</code></span>
+          <span>관리자: <code>admin@artpass.kr</code> / <code>admin1!</code></span>
+        </div>
 
         {/* 하단 링크 */}
         <div className={styles.footer}>
