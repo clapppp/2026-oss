@@ -137,7 +137,8 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   "공연": [
     { key: "title", label: "공연명", type: "text", placeholder: "내용을 입력하세요" },
     { key: "venue", label: "공연장", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "date", label: "공연일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceStartDate", label: "공연 시작일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceEndDate",   label: "공연 종료일", type: "date", placeholder: "YYYY.MM.DD" },
     {
       key: "role", label: "역할", type: "select",
       options: ["출연", "연출", "안무", "기타"],
@@ -147,7 +148,8 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   "연극": [
     { key: "title", label: "공연명", type: "text", placeholder: "내용을 입력하세요" },
     { key: "venue", label: "공연장", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "date", label: "공연일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceStartDate", label: "공연 시작일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceEndDate",   label: "공연 종료일", type: "date", placeholder: "YYYY.MM.DD" },
     {
       key: "role", label: "역할", type: "select",
       options: ["출연", "연출", "희곡집필 (공연 통해)", "희곡집필 (잡지 등)", "비평"],
@@ -157,7 +159,8 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   "무용": [
     { key: "title", label: "공연명", type: "text", placeholder: "내용을 입력하세요" },
     { key: "venue", label: "공연장", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "date", label: "공연일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceStartDate", label: "공연 시작일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceEndDate",   label: "공연 종료일", type: "date", placeholder: "YYYY.MM.DD" },
     {
       key: "role", label: "역할", type: "select",
       options: ["출연", "안무"],
@@ -177,7 +180,8 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   "국악": [
     { key: "title", label: "작품명/공연명", type: "text", placeholder: "내용을 입력하세요" },
     { key: "venue", label: "공연장/방송사", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "date", label: "공연/발표일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceStartDate", label: "공연 시작일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceEndDate",   label: "공연 종료일", type: "date", placeholder: "YYYY.MM.DD" },
     {
       key: "role", label: "역할", type: "select",
       options: ["출연", "작사", "작곡", "편곡", "가창", "연주", "지휘"],
@@ -191,7 +195,8 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   "대중음악": [
     { key: "title", label: "작품명/공연명", type: "text", placeholder: "내용을 입력하세요" },
     { key: "venue", label: "공연장/음반사", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "date", label: "공연/발표일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceStartDate", label: "공연 시작일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceEndDate",   label: "공연 종료일", type: "date", placeholder: "YYYY.MM.DD" },
     {
       key: "role", label: "역할", type: "select",
       options: ["출연", "작사", "작곡", "편곡", "가창", "연주", "지휘"],
@@ -205,7 +210,8 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   "일반음악": [
     { key: "title", label: "작품명/공연명", type: "text", placeholder: "내용을 입력하세요" },
     { key: "venue", label: "공연장/음반사", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "date", label: "공연/발표일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceStartDate", label: "공연 시작일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceEndDate",   label: "공연 종료일", type: "date", placeholder: "YYYY.MM.DD" },
     {
       key: "role", label: "역할", type: "select",
       options: ["출연", "작사", "작곡", "편곡", "가창", "연주", "지휘"],

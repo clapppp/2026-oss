@@ -1,44 +1,4 @@
 import { CATEGORY_FORM_CONFIG, CATEGORY_META } from "../constants/categoryFormConfig";
-import {
-  LITERATURE_GENRE_MIN,
-  MANHWA_SERIAL_MIN_MONTHS,
-  NOVEL_LONGSERIES_MIN,
-  NOVEL_SHORTSERIES_MIN,
-} from "../constants/rules";
-
-function calcSerialMonths(start: string, end: string): number {
-  const s = start.split(".").map(Number);
-  const e = end.split(".").map(Number);
-  if (s.length !== 3 || e.length !== 3) return 0;
-  const [sy, sm, sd] = s;
-  const [ey, em, ed] = e;
-  if ([sy, sm, sd, ey, em, ed].some(isNaN)) return 0;
-  return (ey - sy) * 12 + (em - sm) + (ed >= sd ? 0 : -1);
-}
-
-function hasManhwaSerialException(entries: Record<string, string>[]): boolean {
-  return entries.some(
-    (e) =>
-      e.method === "연재" &&
-      calcSerialMonths(e.serialStart ?? "", e.serialEnd ?? "") >= MANHWA_SERIAL_MIN_MONTHS
-  );
-}
-
-function getLiteratureRequiredCount(entries: Record<string, string>[]): number | null {
-  const genres = entries.map((e) => e.genre).filter(Boolean);
-  if (genres.length === 0) return null;
-  const uniqueGenres = [...new Set(genres)];
-  if (uniqueGenres.length > 1) return null;
-
-  const genre = uniqueGenres[0];
-  if (genre === "소설/동화/청소년소설") {
-    const characters = entries.map((e) => e.character).filter(Boolean);
-    const uniqueChars = [...new Set(characters)];
-    if (uniqueChars.length > 1) return null;
-    return uniqueChars[0] === "장편" ? NOVEL_LONGSERIES_MIN : NOVEL_SHORTSERIES_MIN;
-  }
-  return LITERATURE_GENRE_MIN[genre] ?? null;
-}
 
 export function validateApplicationStep2(
   selectedCategories: string[],

@@ -109,7 +109,8 @@ export interface EntryFiles {
 export type EntryFieldKey =
   | "title" | "publisher" | "genre" | "publishDate" | "volume" | "character"
   | "venue" | "date" | "method" | "serialStart" | "serialEnd"
-  | "programTitle" | "broadcaster" | "programType" | "role" | "company";
+  | "programTitle" | "broadcaster" | "programType" | "role" | "company"
+  | "performanceStartDate" | "performanceEndDate";
 
 export interface CategorySubmission {
   name: string;

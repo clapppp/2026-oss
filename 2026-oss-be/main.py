@@ -12,9 +12,11 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from ai_review import analyze_full_application
+from kopis import lookup_all_entries
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
@@ -32,9 +34,9 @@ SECRET_KEY = "artpass-demo-secret-key"
 ALGORITHM = "HS256"
 DB_PATH = "artpass.db"
 
-ALLOWED_CATEGORIES = {"문학", "연극"}
 
 ai_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+KOPIS_API_KEY = os.environ.get("KOPIS_API_KEY", "")
 
 
 # ── DB ────────────────────────────────────────────────────────────────────────
@@ -320,13 +322,10 @@ async def submit_application(request: Request, current_user: dict = Depends(get_
     except json.JSONDecodeError:
         raise HTTPException(status_code=422, detail="meta JSON 파싱 오류")
 
-    # 허용된 카테고리 검증 및 entries 정리
+    # entries 정리
     entries = []
     for cat in meta.get("categories", []):
         cat_name = cat["name"]
-        if cat_name not in ALLOWED_CATEGORIES:
-            raise HTTPException(status_code=400, detail=f"지원하지 않는 분야입니다: {cat_name}")
-
         for entry in cat.get("entries", []):
             entry_dict = {k: v for k, v in entry.items() if v}
             entry_dict["category"]    = cat_name
@@ -373,10 +372,27 @@ async def submit_application(request: Request, current_user: dict = Depends(get_
         cat_idx_counter[cat] = idx + 1
         entry["files"] = cat_entry_files.get(cat, {}).get(idx, [])
 
-    # AI 분석 (제출 시점에 실행)
+    # KOPIS 조회 (공연 기반 분야 엔트리에 대해 실행, 실패해도 무시)
+    kopis_by_category: dict = {}
+    try:
+        kopis_by_category = lookup_all_entries(KOPIS_API_KEY, meta.get("categories", []))
+    except Exception:
+        pass
+
+    # AI 분석 (사용자 정보 + 폼 데이터 + KOPIS 데이터 + 파일 교차검증)
     ai_feedback = None
     try:
-        ai_feedback = analyze_full_application(ai_client, meta.get("categories", []), raw_files)
+        ai_feedback = analyze_full_application(
+            ai_client,
+            meta.get("categories", []),
+            raw_files,
+            user_info={
+                "name":   current_user.get("name"),
+                "birth":  current_user.get("birth"),
+                "gender": current_user.get("gender"),
+            },
+            kopis_by_category=kopis_by_category or None,
+        )
     except Exception as e:
         ai_feedback = {"error": str(e), "is_sufficient": None, "by_category": {}, "all_issues": [], "all_suggestions": []}
 
@@ -399,3 +415,9 @@ async def submit_application(request: Request, current_user: dict = Depends(get_
     conn.close()
 
     return ok({"id": app_id, "aiFeedback": ai_feedback})
+
+
+# ── 프론트엔드 정적 파일 서빙 (빌드된 dist/) ─────────────────────────────────
+_dist = os.path.join(os.path.dirname(__file__), "../2026-oss-project/dist")
+if os.path.isdir(_dist):
+    app.mount("/", StaticFiles(directory=_dist, html=True), name="static")
