@@ -4,7 +4,15 @@ import uuid
 import hashlib
 import datetime
 import os
+import logging
 from typing import Optional
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("artpass")
 
 import jwt
 import anthropic
@@ -380,8 +388,9 @@ async def submit_application(request: Request, current_user: dict = Depends(get_
     kopis_by_category: dict = {}
     try:
         kopis_by_category = lookup_all_entries(KOPIS_API_KEY, meta.get("categories", []))
-    except Exception:
-        pass
+        log.debug("[KOPIS 결과]\n%s", json.dumps(kopis_by_category, ensure_ascii=False, indent=2))
+    except Exception as e:
+        log.debug("[KOPIS 오류] %s", e)
 
     # AI 분석 (사용자 정보 + 폼 데이터 + KOPIS 데이터 + 파일 교차검증)
     ai_feedback = None

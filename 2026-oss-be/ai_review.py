@@ -1,8 +1,11 @@
 import json
+import logging
 
 import anthropic
 
 from ocr import extract_text
+
+log = logging.getLogger("artpass.ai")
 
 FILE_SLOT_LABELS = {
     "workImage":   "작품 이미지",
@@ -105,9 +108,10 @@ def analyze_application(
     # KOPIS 데이터
     kopis_text = _kopis_section(kopis_results) if kopis_results else ""
 
-    user_content = [
-        {"type": "text", "text": user_text + entries_text + files_text + kopis_text + "\n위 데이터를 교차검증해주세요."}
-    ]
+    prompt_text = user_text + entries_text + files_text + kopis_text + "\n위 데이터를 교차검증해주세요."
+    log.debug("[LLM 프롬프트] 분야=%s\n%s", category_name, prompt_text)
+
+    user_content = [{"type": "text", "text": prompt_text}]
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -117,6 +121,7 @@ def analyze_application(
     )
 
     raw = response.content[0].text.strip()
+    log.debug("[LLM 응답] 분야=%s\n%s", category_name, raw)
     if "```" in raw:
         for part in raw.split("```"):
             part = part.strip().lstrip("json").strip()

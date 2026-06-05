@@ -1,19 +1,25 @@
+import logging
 import mimetypes
 import os
 import subprocess
 import tempfile
 
 TESSERACT_CMD = os.environ.get("TESSERACT_CMD", "tesseract")
+log = logging.getLogger("artpass.ocr")
 
 
 def extract_text(file_bytes: bytes, filename: str) -> str:
     """파일에서 텍스트를 추출한다. 실패 시 빈 문자열 반환."""
     mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    log.debug("[OCR 시작] %s (%s, %d bytes)", filename, mime, len(file_bytes))
     if mime == "application/pdf":
-        return _extract_pdf(file_bytes)
-    if mime.startswith("image/"):
-        return _ocr_image_bytes(file_bytes, suffix=_img_suffix(mime))
-    return ""
+        result = _extract_pdf(file_bytes)
+    elif mime.startswith("image/"):
+        result = _ocr_image_bytes(file_bytes, suffix=_img_suffix(mime))
+    else:
+        result = ""
+    log.debug("[OCR 결과] %s → %d자 추출\n%s", filename, len(result), result[:300] or "(없음)")
+    return result
 
 
 def _extract_pdf(file_bytes: bytes) -> str:
