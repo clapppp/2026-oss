@@ -55,6 +55,59 @@ fi
 # API 경로를 상대경로로 빌드 (FastAPI가 같은 포트에서 서빙)
 VITE_API_BASE_URL="" npm run build
 
+# ── 외부 API 연결 확인 ───────────────────────────────────────
+info "외부 API 연결 확인 중..."
+
+"$BE/venv/bin/python3" - << PYEOF
+import os, sys
+from dotenv import load_dotenv
+load_dotenv("$BE/.env")
+
+ok = True
+
+# Anthropic
+try:
+    import anthropic
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    client.messages.create(model="claude-haiku-4-5-20251001", max_tokens=10,
+                           messages=[{"role":"user","content":"ping"}])
+    print("\033[0;32m[ArtPass]\033[0m ✅ Anthropic API 정상")
+except Exception as e:
+    print(f"\033[0;31m[ArtPass]\033[0m ❌ Anthropic API 오류: {e}")
+    ok = False
+
+# KOPIS
+try:
+    import httpx
+    key = os.environ.get("KOPIS_API_KEY", "")
+    resp = httpx.get("http://kopis.or.kr/openApi/restful/pblprfr",
+                     params={"service": key, "stdate":"20240101","eddate":"20241231",
+                             "shprfnm":"테스트","rows":1,"cpage":1}, timeout=10)
+    if "errmsg" in resp.text and "SERVICE KEY" in resp.text:
+        raise Exception("API 키 미등록")
+    print("\033[0;32m[ArtPass]\033[0m ✅ KOPIS API 정상")
+except Exception as e:
+    print(f"\033[1;33m[ArtPass]\033[0m ⚠️  KOPIS API 오류: {e}")
+
+# Tesseract
+try:
+    import subprocess
+    r = subprocess.run(["tesseract", "--version"], capture_output=True, timeout=5)
+    ver = r.stdout.decode().split("\n")[0] if r.returncode == 0 else ""
+    if not ver:
+        raise Exception("실행 불가")
+    print(f"\033[0;32m[ArtPass]\033[0m ✅ Tesseract 정상 ({ver})")
+except Exception as e:
+    print(f"\033[0;31m[ArtPass]\033[0m ❌ Tesseract 오류: {e}")
+    ok = False
+
+sys.exit(0 if ok else 1)
+PYEOF
+
+if [ $? -ne 0 ]; then
+  error "필수 API 연결에 실패했습니다. .env 설정을 확인하세요."
+fi
+
 # ── 서버 시작 ────────────────────────────────────────────────
 info "서버 시작 (포트 $PORT)..."
 cd "$BE"
