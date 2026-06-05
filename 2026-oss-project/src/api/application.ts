@@ -19,7 +19,7 @@ export async function submitApplication(data: SubmitApplicationRequest): Promise
       });
     }),
   );
-  return request<{ id: string }>("/api/applications", { method: "POST", body: form });
+  return request<{ id: string }>("/api/applications", { method: "POST", body: form }, 120_000);
 }
 
 export async function reviewApplication(

@@ -10,6 +10,7 @@ import jwt
 import anthropic
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Request
+from starlette.requests import ClientDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
@@ -312,7 +313,10 @@ def review_application(
 
 @app.post("/api/applications")
 async def submit_application(request: Request, current_user: dict = Depends(get_current_user)):
-    form = await request.form()
+    try:
+        form = await request.form()
+    except ClientDisconnect:
+        raise HTTPException(status_code=499, detail="클라이언트 연결이 끊겼습니다")
     raw_meta = form.get("meta") or form.get("data")
     if not raw_meta:
         raise HTTPException(status_code=422, detail="meta 필드가 없습니다")
