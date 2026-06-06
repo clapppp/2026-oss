@@ -23,7 +23,7 @@ export default function SummaryBox({ data }: SummaryBoxProps) {
       <InfoRow label="발행처" value={data.publisher} />
       <InfoRow label="세부장르" value={data.genre} />
       <InfoRow label="발행일" value={data.date} />
-      <InfoRow label="작품 분량" value={data.volume} />
+      <InfoRow label="ISBN" value={data.volume} />
       <InfoRow label="국제표준 번호" value={data.isbn} />
       <InfoRow label="제출 표지 파일" value={data.coverFile} />
       <InfoRow label="제출 내지 파일" value={data.innerFile} />

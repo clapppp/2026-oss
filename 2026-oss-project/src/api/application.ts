@@ -5,7 +5,7 @@ export async function getApplications(): Promise<Application[]> {
   return request<Application[]>("/api/applications");
 }
 
-export async function submitApplication(data: SubmitApplicationRequest): Promise<{ id: string }> {
+export async function submitApplication(data: SubmitApplicationRequest): Promise<{ applyNo: string }> {
   const form = new FormData();
   const meta = {
     type: data.type,
@@ -19,7 +19,7 @@ export async function submitApplication(data: SubmitApplicationRequest): Promise
       });
     }),
   );
-  return request<{ id: string }>("/api/applications", { method: "POST", body: form }, 120_000);
+  return request<{ applyNo: string }>("/api/applications", { method: "POST", body: form }, 30_000);
 }
 
 export async function reviewApplication(

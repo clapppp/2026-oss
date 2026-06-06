@@ -68,8 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (nationality !== undefined) profilePayload.nationality = nationality;
     if (penName !== undefined) profilePayload.penName = penName;
     if (Object.keys(profilePayload).length > 0) {
-      await updateProfile(profilePayload);
+      await updateProfile(profilePayload); // 실패 시 예외를 호출자로 전파
     }
+    // API 성공 후 로컬 상태 업데이트
     setUser((prev) => {
       const next = prev ? { ...prev, ...updates } : prev;
       if (next) localStorage.setItem(USER_KEY, JSON.stringify(next));

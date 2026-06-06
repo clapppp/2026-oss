@@ -12,12 +12,13 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
     datefmt="%H:%M:%S",
 )
+logging.getLogger("python_multipart").setLevel(logging.WARNING)
 log = logging.getLogger("artpass")
 
 import jwt
 import anthropic
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
 from starlette.requests import ClientDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -120,6 +121,12 @@ def seed_accounts():
             "password": "password1!", "role": "user",
         },
         {
+            "id": "00000000-0000-0000-0000-000000000003",
+            "name": "문지혁", "birth": "19950315", "gender": "M",
+            "phone": "01011112222", "email": "demo2@artpass.kr",
+            "password": "password1!", "role": "user",
+        },
+        {
             "id": "00000000-0000-0000-0000-000000000002",
             "name": "관리자", "birth": "19800101", "gender": "M",
             "phone": "01099999999", "email": "admin@artpass.kr",
@@ -181,6 +188,10 @@ def user_schema(u: dict) -> dict:
 
 def app_schema(a: dict, applicant_name: str) -> dict:
     entries = json.loads(a["entries_json"])
+    # 파일 본문(base64)은 다운로드 전용 엔드포인트로 분리 — 목록 응답에서 제외
+    for entry in entries:
+        for f in entry.get("files", []):
+            f.pop("data", None)
     categories = list(dict.fromkeys(e["category"] for e in entries))
     ai_feedback = json.loads(a["ai_feedback_json"]) if a.get("ai_feedback_json") else None
     return {
@@ -219,6 +230,24 @@ class ReviewBody(BaseModel):
     reason: Optional[str] = None
 
 
+class ResetPasswordBody(BaseModel):
+    email: str
+    phone: str
+    new_password: str
+
+
+class UpdateProfileBody(BaseModel):
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    nationality: Optional[str] = None
+    penName: Optional[str] = None
+
+
+class ChangePasswordBody(BaseModel):
+    currentPassword: str
+    newPassword: str
+
+
 # ── Auth routes ───────────────────────────────────────────────────────────────
 
 @app.post("/api/auth/login")
@@ -237,6 +266,29 @@ def login(body: LoginBody):
 
 @app.post("/api/auth/logout")
 def logout():
+    return ok(None)
+
+
+@app.post("/api/auth/reset-password")
+def reset_password(body: ResetPasswordBody):
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE email = ?", (body.email,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=400, detail="이메일 또는 휴대폰 번호가 일치하지 않습니다")
+
+    stored_phone = dict(row)["phone"].replace("-", "").replace(" ", "")
+    input_phone  = body.phone.replace("-", "").replace(" ", "")
+    if stored_phone != input_phone:
+        raise HTTPException(status_code=400, detail="이메일 또는 휴대폰 번호가 일치하지 않습니다")
+
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET password_hash = ? WHERE email = ?",
+        (hash_password(body.new_password), body.email),
+    )
+    conn.commit()
+    conn.close()
     return ok(None)
 
 
@@ -262,6 +314,56 @@ def signup(body: SignupBody):
     conn.close()
 
     return ok({"user": user_schema(dict(row))})
+
+
+# ── User routes ───────────────────────────────────────────────────────────────
+
+@app.patch("/api/user/profile")
+def update_profile(body: UpdateProfileBody, current_user: dict = Depends(get_current_user)):
+    fields, params = [], []
+    if body.phone is not None:
+        fields.append("phone = ?"); params.append(body.phone)
+    if body.email is not None:
+        # 이메일 중복 확인
+        conn = get_db()
+        dup = conn.execute(
+            "SELECT id FROM users WHERE email = ? AND id != ?", (body.email, current_user["id"])
+        ).fetchone()
+        conn.close()
+        if dup:
+            raise HTTPException(status_code=409, detail="이미 사용 중인 이메일입니다")
+        fields.append("email = ?"); params.append(body.email)
+    if body.nationality is not None:
+        fields.append("nationality = ?"); params.append(body.nationality)
+    if body.penName is not None:
+        fields.append("pen_name = ?"); params.append(body.penName)
+
+    if not fields:
+        return ok(None)
+
+    params.append(current_user["id"])
+    conn = get_db()
+    conn.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = ?", params)
+    conn.commit()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (current_user["id"],)).fetchone()
+    conn.close()
+
+    u = dict(row)
+    return ok(user_schema(u))
+
+
+@app.patch("/api/auth/password")
+def change_password(body: ChangePasswordBody, current_user: dict = Depends(get_current_user)):
+    if current_user["password_hash"] != hash_password(body.currentPassword):
+        raise HTTPException(status_code=400, detail="현재 비밀번호가 올바르지 않습니다")
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (hash_password(body.newPassword), current_user["id"]),
+    )
+    conn.commit()
+    conn.close()
+    return ok(None)
 
 
 # ── Application routes ────────────────────────────────────────────────────────
@@ -319,8 +421,78 @@ def review_application(
     return ok({"id": app_id, "status": body.status})
 
 
+def _run_ai_pipeline(app_id: str, categories: list, raw_files: dict, user_info: dict):
+    """백그라운드: KOPIS + AI 처리 후 DB 업데이트"""
+    kopis_by_category: dict = {}
+    try:
+        kopis_by_category = lookup_all_entries(KOPIS_API_KEY, categories)
+        log.debug("[KOPIS 결과]\n%s", json.dumps(kopis_by_category, ensure_ascii=False, indent=2))
+    except Exception as e:
+        log.debug("[KOPIS 오류] %s", e)
+
+    try:
+        ai_feedback = analyze_full_application(
+            ai_client, categories, raw_files, user_info,
+            kopis_by_category=kopis_by_category or None,
+        )
+    except Exception as e:
+        ai_feedback = {"error": str(e), "is_sufficient": None, "by_category": {}, "all_issues": [], "all_suggestions": []}
+
+    conn = get_db()
+    conn.execute(
+        "UPDATE applications SET ai_feedback_json = ? WHERE id = ?",
+        (json.dumps(ai_feedback, ensure_ascii=False), app_id),
+    )
+    conn.commit()
+    conn.close()
+    log.debug("[AI 파이프라인 완료] app_id=%s", app_id)
+
+
+@app.get("/api/applications/{app_id}/file")
+def download_entry_file(
+    app_id: str,
+    entry_idx: int,
+    slot: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """특정 신청 건의 첨부 파일 다운로드"""
+    from fastapi.responses import Response
+    import base64 as b64
+    conn = get_db()
+    row = conn.execute(
+        "SELECT entries_json, user_id FROM applications WHERE id = ?", (app_id,)
+    ).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="신청 건을 찾을 수 없습니다")
+    if current_user["role"] != "admin" and row["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="접근 권한이 없습니다")
+
+    entries = json.loads(row["entries_json"])
+    if entry_idx < 0 or entry_idx >= len(entries):
+        raise HTTPException(status_code=404, detail="항목을 찾을 수 없습니다")
+
+    for f in entries[entry_idx].get("files", []):
+        if f.get("slot") == slot:
+            data = f.get("data", "")
+            if not data:
+                raise HTTPException(status_code=404, detail="파일 데이터가 없습니다")
+            mime = f.get("mimeType", "application/octet-stream")
+            filename = f.get("filename", slot)
+            return Response(
+                content=b64.b64decode(data),
+                media_type=mime,
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
+    raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
+
+
 @app.post("/api/applications")
-async def submit_application(request: Request, current_user: dict = Depends(get_current_user)):
+async def submit_application(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+):
     try:
         form = await request.form()
     except ClientDisconnect:
@@ -345,11 +517,11 @@ async def submit_application(request: Request, current_user: dict = Depends(get_
             entry_dict["entryReason"] = None
             entries.append(entry_dict)
 
-    # 업로드 파일 수집 및 파싱 (key 형식: "{category}[{index}].{slot}")
+    # 업로드 파일 수집 (key: "{category}[{index}].{slot}")
     import re, base64, mimetypes
     raw_files: dict[str, tuple[bytes, str]] = {}
     for key, value in form.multi_items():
-        if key == "meta":
+        if key in ("meta", "data"):
             continue
         if hasattr(value, "read"):
             file_bytes = await value.read()
@@ -376,7 +548,6 @@ async def submit_application(request: Request, current_user: dict = Depends(get_
             "data":     base64.standard_b64encode(file_bytes).decode(),
         })
 
-    # 분야별 entry index 재산출 후 files 붙이기
     cat_idx_counter: dict[str, int] = {}
     for entry in entries:
         cat = entry["category"]
@@ -384,31 +555,7 @@ async def submit_application(request: Request, current_user: dict = Depends(get_
         cat_idx_counter[cat] = idx + 1
         entry["files"] = cat_entry_files.get(cat, {}).get(idx, [])
 
-    # KOPIS 조회 (공연 기반 분야 엔트리에 대해 실행, 실패해도 무시)
-    kopis_by_category: dict = {}
-    try:
-        kopis_by_category = lookup_all_entries(KOPIS_API_KEY, meta.get("categories", []))
-        log.debug("[KOPIS 결과]\n%s", json.dumps(kopis_by_category, ensure_ascii=False, indent=2))
-    except Exception as e:
-        log.debug("[KOPIS 오류] %s", e)
-
-    # AI 분석 (사용자 정보 + 폼 데이터 + KOPIS 데이터 + 파일 교차검증)
-    ai_feedback = None
-    try:
-        ai_feedback = analyze_full_application(
-            ai_client,
-            meta.get("categories", []),
-            raw_files,
-            user_info={
-                "name":   current_user.get("name"),
-                "birth":  current_user.get("birth"),
-                "gender": current_user.get("gender"),
-            },
-            kopis_by_category=kopis_by_category or None,
-        )
-    except Exception as e:
-        ai_feedback = {"error": str(e), "is_sufficient": None, "by_category": {}, "all_issues": [], "all_suggestions": []}
-
+    # DB에 즉시 저장 (ai_feedback_json 은 NULL — 백그라운드에서 채워짐)
     app_id   = str(uuid.uuid4())
     apply_no = f"ART-{datetime.date.today().strftime('%Y%m%d')}-{app_id[:4].upper()}"
     now      = datetime.date.today().isoformat()
@@ -417,17 +564,29 @@ async def submit_application(request: Request, current_user: dict = Depends(get_
     conn.execute(
         """INSERT INTO applications
                (id, apply_no, user_id, type, status, status_date, apply_date, entries_json, ai_feedback_json)
-           VALUES (?, ?, ?, ?, '심사중', ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, '심사중', ?, ?, ?, NULL)""",
         (app_id, apply_no, current_user["id"],
          meta.get("type", "일반 유형 · 단일 분야"),
          now, now,
-         json.dumps(entries, ensure_ascii=False),
-         json.dumps(ai_feedback, ensure_ascii=False)),
+         json.dumps(entries, ensure_ascii=False)),
     )
     conn.commit()
     conn.close()
 
-    return ok({"id": app_id, "aiFeedback": ai_feedback})
+    # KOPIS + AI를 백그라운드에서 처리
+    background_tasks.add_task(
+        _run_ai_pipeline,
+        app_id,
+        meta.get("categories", []),
+        raw_files,
+        {
+            "name":   current_user.get("name"),
+            "birth":  current_user.get("birth"),
+            "gender": current_user.get("gender"),
+        },
+    )
+
+    return ok({"applyNo": apply_no})
 
 
 # ── 프론트엔드 정적 파일 서빙 (빌드된 dist/) ─────────────────────────────────

@@ -133,29 +133,37 @@ function StatusBanner({ app }: { app: Application }) {
 }
 
 // ── PDF 다운로드 버튼 ─────────────────────────────────────────
-function FileBtn({ label, filename, data, mimeType }: { label: string; filename: string; data?: string; mimeType?: string }) {
-  function handleDownload() {
-    let url: string;
-    if (data) {
-      const binary = atob(data);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: mimeType || "application/octet-stream" });
-      url = URL.createObjectURL(blob);
-    } else {
-      const blob = new Blob([`[데모] ${filename}`], { type: "application/pdf" });
-      url = URL.createObjectURL(blob);
+function FileBtn({ label, filename, appId, entryIdx, slot }: {
+  label: string; filename: string; appId: string; entryIdx: number; slot: string;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleDownload() {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("artpass_token");
+      const res = await fetch(
+        `/api/applications/${appId}/file?entry_idx=${entryIdx}&slot=${slot}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+      );
+      if (!res.ok) throw new Error("파일을 불러올 수 없습니다");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("파일 다운로드에 실패했습니다.");
+    } finally {
+      setLoading(false);
     }
-    const a = document.createElement("a");
-    a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
   }
   return (
-    <button type="button" className={styles.fileBtn} onClick={handleDownload} title={filename}>
+    <button type="button" className={styles.fileBtn} onClick={handleDownload} disabled={loading} title={filename}>
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" width={11} height={11} aria-hidden="true">
         <path d="M7 2v7M4.5 6.5 7 9l2.5-2.5" /><line x1="2" y1="12" x2="12" y2="12" />
       </svg>
-      {label}
+      {loading ? "…" : label}
     </button>
   );
 }
@@ -361,7 +369,7 @@ function ReasonModal({ entry, index, onClose, onReapply }: {
 }
 
 // ── 작품 카드 ─────────────────────────────────────────────────
-function EntryCard({ entry, index, onReapply }: { entry: ApplicationEntry; index: number; onReapply?: () => void }) {
+function EntryCard({ entry, index, appId, onReapply }: { entry: ApplicationEntry; index: number; appId: string; onReapply?: () => void }) {
   const [showModal, setShowModal] = useState(false);
   const status = entry.entryStatus ?? "심사중";
   const isRejected = status === "반려";
@@ -371,7 +379,7 @@ function EntryCard({ entry, index, onReapply }: { entry: ApplicationEntry; index
   const metaParts = [
     entry.genre, entry.publisher, entry.date,
     entry.character,
-    entry.volume,
+    entry.isbn,
     entry.method && entry.method !== entry.genre ? entry.method : undefined,
     entry.role   && entry.role   !== entry.genre ? entry.role   : undefined,
     (entry.serialStart || entry.serialEnd)
@@ -394,7 +402,7 @@ function EntryCard({ entry, index, onReapply }: { entry: ApplicationEntry; index
             {entry.files && entry.files.length > 0 && (
               <div className={styles.entryFiles}>
                 {entry.files.map((f) => (
-                  <FileBtn key={f.label} label={f.label} filename={f.filename} data={f.data} mimeType={f.mimeType} />
+                  <FileBtn key={f.label} label={f.label} filename={f.filename} appId={appId} entryIdx={index} slot={f.slot ?? ""} />
                 ))}
               </div>
             )}
@@ -493,7 +501,23 @@ function DetailPanel({ app, onClose, onReapply }: { app: Application; onClose: (
           </div>
 
           {/* ── AI 사전 검토 ── */}
-          {app.aiFeedback && <AiFeedbackSection feedback={app.aiFeedback} />}
+          {app.aiFeedback
+            ? <AiFeedbackSection feedback={app.aiFeedback} />
+            : (
+              <div className={styles.aiFeedbackBox}>
+                <div className={styles.aiFeedbackHeader}>
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" width={14} height={14} aria-hidden="true">
+                    <path d="M8 2v2M8 12v2M2 8h2M12 8h2" />
+                    <circle cx="8" cy="8" r="3" />
+                  </svg>
+                  AI 사전 검토
+                </div>
+                <p style={{ margin: 0, color: "var(--krds-text-3)", fontSize: "0.875rem" }}>
+                  AI 교차검증이 처리 중입니다. 잠시 후 다시 확인해 주세요.
+                </p>
+              </div>
+            )
+          }
 
           {/* ── 작품 목록 ── */}
           <section className={styles.entriesSection}>
@@ -522,7 +546,7 @@ function DetailPanel({ app, onClose, onReapply }: { app: Application; onClose: (
                     </div>
                     <div className={styles.entryList}>
                       {entries.map((entry, i) => (
-                        <EntryCard key={i} entry={entry} index={i} onReapply={onReapply} />
+                        <EntryCard key={i} entry={entry} index={app.entries.indexOf(entry)} appId={app.id} onReapply={onReapply} />
                       ))}
                     </div>
                   </div>
@@ -531,7 +555,7 @@ function DetailPanel({ app, onClose, onReapply }: { app: Application; onClose: (
             ) : (
               <div className={styles.entryList}>
                 {app.entries.map((entry, i) => (
-                  <EntryCard key={i} entry={entry} index={i} onReapply={onReapply} />
+                  <EntryCard key={i} entry={entry} index={i} appId={app.id} onReapply={onReapply} />
                 ))}
               </div>
             )}

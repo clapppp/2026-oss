@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import styles from "./SignupPage.module.css";
@@ -10,8 +10,6 @@ import {
   MIN_PASSWORD_LENGTH,
   PHONE_DIGITS,
   BIRTH_DIGITS,
-  AUTH_CODE_DIGITS,
-  AUTH_CODE_TIMEOUT_SECONDS,
 } from "../constants/rules";
 
 interface SignupPageProps {
@@ -20,24 +18,17 @@ interface SignupPageProps {
 }
 
 // ── 단계 ──────────────────────────────────────────────
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3;
 
-const STEP_LABELS = ["약관 동의", "본인 인증", "정보 입력", "가입 완료"];
+const STEP_LABELS = ["약관 동의", "정보 입력", "가입 완료"];
 
 // ── 약관 ──────────────────────────────────────────────
 const TERMS = [
-  { key: "terms",   label: "이용약관 동의",             required: true },
-  { key: "privacy", label: "개인정보 처리방침 동의",     required: true },
-  { key: "age",     label: "만 14세 이상 확인",          required: true },
-  { key: "marketing", label: "마케팅 정보 수신 동의",    required: false },
+  { key: "terms",     label: "이용약관 동의",          required: true },
+  { key: "privacy",   label: "개인정보 처리방침 동의",  required: true },
+  { key: "age",       label: "만 14세 이상 확인",       required: true },
+  { key: "marketing", label: "마케팅 정보 수신 동의",   required: false },
 ];
-
-// ── 통신사 ─────────────────────────────────────────────
-const CARRIERS = ["SKT", "KT", "LG U+", "SKT 알뜰폰", "KT 알뜰폰", "LG 알뜰폰"];
-
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
 
 // ── Step 1: 약관 동의 ──────────────────────────────────
 function TermsStep({ onNext }: { onNext: () => void }) {
@@ -104,58 +95,41 @@ function TermsStep({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ── Step 2: 본인인증 ────────────────────────────────────
-function VerifyStep({ onNext }: { onNext: (name: string, birth: string, gender: "M" | "F", phone: string) => void }) {
+// ── Step 2: 정보 입력 ───────────────────────────────────
+function InfoStep({
+  loading = false,
+  onNext,
+}: {
+  loading?: boolean;
+  onNext: (data: { name: string; birth: string; gender: "M" | "F"; phone: string; email: string; password: string }) => void;
+}) {
   const [name, setName] = useState("");
   const [birth, setBirth] = useState("");
   const [gender, setGender] = useState<"M" | "F" | "">("");
-  const [carrier, setCarrier] = useState("");
   const [phone, setPhone] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
-  const [code, setCode] = useState("");
-  const [verified, setVerified] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(AUTH_CODE_TIMEOUT_SECONDS);
-  const [loading, setLoading] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
 
-  useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  const pwMismatch = pwConfirm.length > 0 && pw !== pwConfirm;
+  const pwWeak = pw.length > 0 && pw.length < MIN_PASSWORD_LENGTH;
+  const emailInvalid = email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const startTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setTimeLeft(AUTH_CODE_TIMEOUT_SECONDS);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) { clearInterval(timerRef.current!); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleSendCode = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setCodeSent(true);
-      setVerified(false);
-      setCode("");
-      startTimer();
-    }, 800);
-  };
-
-  const handleVerify = () => {
-    setVerified(true);
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
-
-  const canSend = name && birth.replace(/\D/g, "").length === BIRTH_DIGITS && gender && carrier && phone.replace(/\D/g, "").length === PHONE_DIGITS;
-  const canVerify = code.length === AUTH_CODE_DIGITS && timeLeft > 0;
+  const canSubmit =
+    name.trim().length > 0 &&
+    birth.replace(/\D/g, "").length === BIRTH_DIGITS &&
+    gender !== "" &&
+    phone.replace(/\D/g, "").length === PHONE_DIGITS &&
+    email.length > 0 &&
+    !emailInvalid &&
+    pw.length >= MIN_PASSWORD_LENGTH &&
+    pw === pwConfirm;
 
   return (
     <div className={styles.stepContent}>
       <p className={styles.stepDesc}>
-        실명 확인 및 휴대폰 인증을 통해 본인을 확인합니다.
+        가입에 필요한 정보를 입력하세요.
       </p>
 
       <div className={styles.fieldGroup}>
@@ -167,7 +141,6 @@ function VerifyStep({ onNext }: { onNext: (name: string, birth: string, gender: 
             placeholder="실명을 입력하세요"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            disabled={verified}
           />
         </div>
 
@@ -185,7 +158,6 @@ function VerifyStep({ onNext }: { onNext: (name: string, birth: string, gender: 
                 if (d.length > 6) out = d.slice(0, 4) + "." + d.slice(4, 6) + "." + d.slice(6);
                 setBirth(out);
               }}
-              disabled={verified}
             />
           </div>
           <div className={styles.field}>
@@ -197,7 +169,6 @@ function VerifyStep({ onNext }: { onNext: (name: string, birth: string, gender: 
                   type="button"
                   className={[styles.genderBtn, gender === g ? styles.genderBtnActive : ""].join(" ")}
                   onClick={() => setGender(g)}
-                  disabled={verified}
                 >
                   {g === "M" ? "남성" : "여성"}
                 </button>
@@ -205,138 +176,14 @@ function VerifyStep({ onNext }: { onNext: (name: string, birth: string, gender: 
             </div>
           </div>
         </div>
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <h3 className={styles.fieldGroupTitle}>휴대폰 인증</h3>
-
-        <div className={styles.field}>
-          <label className={styles.fieldLabel}>통신사 <span className={styles.required}>*</span></label>
-          <div className={styles.carrierGrid}>
-            {CARRIERS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={[styles.carrierBtn, carrier === c ? styles.carrierBtnActive : ""].join(" ")}
-                onClick={() => setCarrier(c)}
-                disabled={verified}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <div className={styles.field}>
           <label className={styles.fieldLabel}>휴대폰 번호 <span className={styles.required}>*</span></label>
-          <div className={styles.inputWithBtn}>
-            <input
-              className={styles.input}
-              placeholder="010-0000-0000"
-              value={phone}
-              onChange={(e) => setPhone(formatPhone(e.target.value))}
-              disabled={verified}
-            />
-            <Button
-              variant="secondary"
-              size="md"
-              disabled={!canSend || verified}
-              loading={loading}
-              onClick={handleSendCode}
-            >
-              {codeSent ? "재발송" : "인증번호 발송"}
-            </Button>
-          </div>
-        </div>
-
-        {codeSent && !verified && (
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>인증번호 <span className={styles.required}>*</span></label>
-            <div className={styles.inputWithBtn}>
-              <div className={styles.inputTimer}>
-                <input
-                  className={styles.input}
-                  placeholder="인증번호 6자리"
-                  maxLength={AUTH_CODE_DIGITS}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, AUTH_CODE_DIGITS))}
-                />
-                {timeLeft > 0 ? (
-                  <span className={styles.timer}>{pad(Math.floor(timeLeft / 60))}:{pad(timeLeft % 60)}</span>
-                ) : (
-                  <span className={styles.timerExpired}>만료</span>
-                )}
-              </div>
-              <Button variant="primary" size="md" disabled={!canVerify} onClick={handleVerify}>
-                인증하기
-              </Button>
-            </div>
-            {timeLeft === 0 && (
-              <p className={styles.fieldError}>인증 시간이 만료되었습니다. 인증번호를 다시 발송해 주세요.</p>
-            )}
-          </div>
-        )}
-
-        {verified && (
-          <div className={styles.verifiedBanner}>
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={18} height={18}>
-              <circle cx="10" cy="10" r="8" />
-              <polyline points="6.5 10.5 9 13 13.5 8" />
-            </svg>
-            본인인증이 완료되었습니다.
-          </div>
-        )}
-      </div>
-
-      <div className={styles.stepActions}>
-        <Button variant="primary" size="lg" fullWidth disabled={!verified} onClick={() => onNext(name, birth, gender as "M" | "F", phone)}>
-          다음
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ── Step 3: 회원정보 입력 ───────────────────────────────
-function InfoStep({
-  verifiedName,
-  verifiedPhone,
-  loading = false,
-  onNext,
-}: {
-  verifiedName: string;
-  verifiedPhone: string;
-  loading?: boolean;
-  onNext: (email: string, password: string) => void;
-}) {
-  const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [pwConfirm, setPwConfirm] = useState("");
-  const [showPw, setShowPw] = useState(false);
-
-  const pwMismatch = pwConfirm.length > 0 && pw !== pwConfirm;
-  const pwWeak = pw.length > 0 && pw.length < MIN_PASSWORD_LENGTH;
-  const emailInvalid = email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  const canSubmit = email && !emailInvalid && pw.length >= MIN_PASSWORD_LENGTH && pw === pwConfirm;
-
-  return (
-    <div className={styles.stepContent}>
-      <p className={styles.stepDesc}>
-        로그인에 사용할 계정 정보를 입력하세요.
-      </p>
-
-      <div className={styles.fieldGroup}>
-        <h3 className={styles.fieldGroupTitle}>인증된 정보</h3>
-        <div className={styles.verifiedInfo}>
-          <div className={styles.verifiedInfoRow}>
-            <span className={styles.verifiedInfoLabel}>이름</span>
-            <span className={styles.verifiedInfoValue}>{verifiedName}</span>
-          </div>
-          <div className={styles.verifiedInfoRow}>
-            <span className={styles.verifiedInfoLabel}>휴대폰</span>
-            <span className={styles.verifiedInfoValue}>{verifiedPhone}</span>
-          </div>
+          <Input
+            placeholder="010-0000-0000"
+            value={phone}
+            onChange={(e) => setPhone(formatPhone(e.target.value))}
+          />
         </div>
       </div>
 
@@ -387,7 +234,14 @@ function InfoStep({
       </div>
 
       <div className={styles.stepActions}>
-        <Button variant="primary" size="lg" fullWidth disabled={!canSubmit} loading={loading} onClick={() => onNext(email, pw)}>
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          disabled={!canSubmit}
+          loading={loading}
+          onClick={() => onNext({ name, birth, gender: gender as "M" | "F", phone, email, password: pw })}
+        >
           가입하기
         </Button>
       </div>
@@ -395,7 +249,7 @@ function InfoStep({
   );
 }
 
-// ── Step 4: 완료 ────────────────────────────────────────
+// ── Step 3: 완료 ────────────────────────────────────────
 function CompleteStep({ name, onComplete }: { name: string; onComplete: () => void }) {
   return (
     <div className={styles.completeWrap}>
@@ -423,10 +277,7 @@ function CompleteStep({ name, onComplete }: { name: string; onComplete: () => vo
 export default function SignupPage({ onComplete, onCancel }: SignupPageProps) {
   const { login } = useAuth();
   const [step, setStep] = useState<Step>(1);
-  const [verifiedName, setVerifiedName] = useState("");
-  const [verifiedBirth, setVerifiedBirth] = useState("");
-  const [verifiedGender, setVerifiedGender] = useState<"M" | "F">("M");
-  const [verifiedPhone, setVerifiedPhone] = useState("");
+  const [completedName, setCompletedName] = useState("");
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState("");
 
@@ -444,9 +295,9 @@ export default function SignupPage({ onComplete, onCancel }: SignupPageProps) {
         </div>
 
         {/* 스텝 표시 */}
-        {step < 4 && (
+        {step < 3 && (
           <div className={styles.stepBar} role="list" aria-label="가입 진행 단계">
-            {STEP_LABELS.slice(0, 3).map((label, i) => {
+            {STEP_LABELS.slice(0, 2).map((label, i) => {
               const num = (i + 1) as Step;
               const state = num < step ? "done" : num === step ? "active" : "inactive";
               return (
@@ -461,7 +312,7 @@ export default function SignupPage({ onComplete, onCancel }: SignupPageProps) {
                     )}
                   </div>
                   <span className={[styles.stepLabel, styles[state]].join(" ")}>{label}</span>
-                  {i < 2 && <div className={[styles.stepLine, i + 1 < step ? styles.stepLineDone : ""].join(" ")} />}
+                  {i < 1 && <div className={[styles.stepLine, i + 1 < step ? styles.stepLineDone : ""].join(" ")} />}
                 </div>
               );
             })}
@@ -471,28 +322,16 @@ export default function SignupPage({ onComplete, onCancel }: SignupPageProps) {
         {/* 단계별 콘텐츠 */}
         {step === 1 && <TermsStep onNext={() => setStep(2)} />}
         {step === 2 && (
-          <VerifyStep
-            onNext={(name, birth, gender, phone) => {
-              setVerifiedName(name);
-              setVerifiedBirth(birth);
-              setVerifiedGender(gender);
-              setVerifiedPhone(phone);
-              setStep(3);
-            }}
-          />
-        )}
-        {step === 3 && (
           <InfoStep
-            verifiedName={verifiedName}
-            verifiedPhone={verifiedPhone}
             loading={signupLoading}
-            onNext={async (email, password) => {
+            onNext={async ({ name, birth, gender, phone, email, password }) => {
               setSignupError("");
               setSignupLoading(true);
               try {
-                const user = await signup({ name: verifiedName, birth: verifiedBirth, gender: verifiedGender, phone: verifiedPhone, email, password });
-                await login(user.email, password);
-                setStep(4);
+                await signup({ name, birth, gender, phone, email, password });
+                await login(email, password);
+                setCompletedName(name);
+                setStep(3);
               } catch (err) {
                 setSignupError(err instanceof Error ? err.message : "회원가입 중 오류가 발생했습니다.");
               } finally {
@@ -502,7 +341,7 @@ export default function SignupPage({ onComplete, onCancel }: SignupPageProps) {
           />
         )}
         {signupError && <p className={styles.signupError}>{signupError}</p>}
-        {step === 4 && <CompleteStep name={verifiedName} onComplete={onComplete} />}
+        {step === 3 && <CompleteStep name={completedName} onComplete={onComplete} />}
       </div>
     </div>
   );

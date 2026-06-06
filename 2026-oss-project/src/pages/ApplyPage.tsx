@@ -35,7 +35,7 @@ const EVIDENCE_SLOTS: { key: EvidenceSlot; label: string; hint: string }[] = [
   {
     key: "income",
     label: "수입 관련 자료",
-    hint: "예: 통장사본, 제작비인건, 일급내역, 출산내역, 방퀴내역 등",
+    hint: "예: 통장사본, 제작비인건, 일급내역 등",
   },
   {
     key: "other",
@@ -63,7 +63,7 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
   const [confirmEntry, setConfirmEntry] = useState<{ cat: string; index: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitDone, setSubmitDone] = useState(false);
-  const [submittedId, setSubmittedId] = useState("");
+  const [submittedApplyNo, setSubmittedApplyNo] = useState("");
 
   const showToast = (message?: string) => {
     if (message) setToastMessage(message);
@@ -149,8 +149,8 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
           };
         }),
       };
-      const { id } = await submitApplication(data);
-      setSubmittedId(id);
+      const { applyNo } = await submitApplication(data);
+      setSubmittedApplyNo(applyNo);
       setSubmitDone(true);
     } catch {
       showToast("제출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
@@ -331,12 +331,13 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                     <circle cx="32" cy="32" r="28" />
                     <polyline points="20 33 28 41 44 24" />
                   </svg>
-                  <h2 className="sectionTitle" style={{ textAlign: "center", margin: 0 }}>신청서 작성이 완료되었습니다</h2>
+                  <h2 className="sectionTitle" style={{ textAlign: "center", margin: 0 }}>제출 완료!</h2>
                   <p style={{ color: "var(--krds-text-2)", margin: 0 }}>
-                    작성 번호: <strong>{submittedId}</strong>
+                    접수번호: <strong>{submittedApplyNo}</strong>
                   </p>
-                  <p style={{ color: "var(--krds-text-3)", margin: 0, fontSize: "0.9rem" }}>
-                    실제 신청은 공식 사이트(kawfartist.kr)에서 진행해 주세요. 작성한 내용은 신청 현황에서 확인할 수 있습니다.
+                  <p style={{ color: "var(--krds-text-3)", margin: 0, fontSize: "0.9rem", textAlign: "center" }}>
+                    AI 교차검증이 백그라운드에서 처리 중입니다.<br />
+                    잠시 후 신청 현황에서 결과를 확인하세요.
                   </p>
                 </div>
               </section>

@@ -1,15 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import { EyeIcon } from "../components/common/icons";
 import { formatPhone } from "../utils/formatters";
-import {
-  MIN_PASSWORD_LENGTH,
-  PHONE_DIGITS,
-  BIRTH_DIGITS,
-  AUTH_CODE_DIGITS,
-  AUTH_CODE_TIMEOUT_SECONDS,
-} from "../constants/rules";
+import { MIN_PASSWORD_LENGTH, PHONE_DIGITS } from "../constants/rules";
+import { resetPassword } from "../api/user";
 import styles from "./ForgotPasswordPage.module.css";
 
 interface ForgotPasswordPageProps {
@@ -19,95 +14,44 @@ interface ForgotPasswordPageProps {
 
 type Step = 1 | 2 | 3;
 
-const STEP_LABELS = ["본인 인증", "비밀번호 재설정", "완료"];
+const STEP_LABELS = ["본인 확인", "비밀번호 재설정", "완료"];
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-// ── Step 1: 본인 인증 ──────────────────────────────────
+// ── Step 1: 본인 확인 (이메일 + 휴대폰) ──────────────────
 function VerifyStep({
   onNext,
 }: {
-  onNext: (name: string, email: string) => void;
+  onNext: (email: string, phone: string) => void;
 }) {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [birth, setBirth] = useState("");
   const [phone, setPhone] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
-  const [code, setCode] = useState("");
-  const [verified, setVerified] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(AUTH_CODE_TIMEOUT_SECONDS);
   const [loading, setLoading] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  const startTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setTimeLeft(AUTH_CODE_TIMEOUT_SECONDS);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleSendCode = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setCodeSent(true);
-      setVerified(false);
-      setCode("");
-      startTimer();
-    }, 800);
-  };
-
-  const handleVerify = () => {
-    setVerified(true);
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
+  const [error, setError] = useState("");
 
   const emailInvalid = email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const canSend =
-    name.trim().length > 0 &&
-    !emailInvalid &&
+  const canSubmit =
     email.length > 0 &&
-    birth.replace(/\D/g, "").length === BIRTH_DIGITS &&
+    !emailInvalid &&
     phone.replace(/\D/g, "").length === PHONE_DIGITS;
-  const canVerify = code.length === AUTH_CODE_DIGITS && timeLeft > 0;
+
+  const handleNext = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      // 실제 일치 여부는 비밀번호 변경 시 서버에서 검증하므로
+      // 여기선 형식만 확인하고 다음 단계로 넘김
+      onNext(email, phone);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={styles.stepContent}>
       <p className={styles.stepDesc}>
-        가입 시 등록한 정보를 입력하여 본인을 확인합니다.
+        가입 시 등록한 이메일과 휴대폰 번호를 입력하세요.
       </p>
 
       <div className={styles.fieldGroup}>
-        <h3 className={styles.fieldGroupTitle}>기본 정보</h3>
-
-        <div className={styles.field}>
-          <label className={styles.fieldLabel}>
-            이름 <span className={styles.required}>*</span>
-          </label>
-          <Input
-            placeholder="실명을 입력하세요"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={verified}
-          />
-        </div>
-
         <div className={styles.field}>
           <label className={styles.fieldLabel}>
             이메일 (아이디) <span className={styles.required}>*</span>
@@ -118,7 +62,6 @@ function VerifyStep({
             placeholder="가입 시 등록한 이메일"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={verified}
           />
           {emailInvalid && (
             <p className={styles.fieldError}>올바른 이메일 형식을 입력하세요.</p>
@@ -127,121 +70,26 @@ function VerifyStep({
 
         <div className={styles.field}>
           <label className={styles.fieldLabel}>
-            생년월일 <span className={styles.required}>*</span>
+            휴대폰 번호 <span className={styles.required}>*</span>
           </label>
           <Input
-            placeholder="YYYY.MM.DD"
-            maxLength={10}
-            value={birth}
-            onChange={(e) => {
-              const d = e.target.value.replace(/\D/g, "").slice(0, BIRTH_DIGITS);
-              let out = d;
-              if (d.length > 4) out = d.slice(0, 4) + "." + d.slice(4);
-              if (d.length > 6)
-                out = d.slice(0, 4) + "." + d.slice(4, 6) + "." + d.slice(6);
-              setBirth(out);
-            }}
-            disabled={verified}
+            placeholder="010-0000-0000"
+            value={phone}
+            onChange={(e) => setPhone(formatPhone(e.target.value))}
           />
         </div>
       </div>
 
-      <div className={styles.fieldGroup}>
-        <h3 className={styles.fieldGroupTitle}>휴대폰 인증</h3>
-
-        <div className={styles.field}>
-          <label className={styles.fieldLabel}>
-            휴대폰 번호 <span className={styles.required}>*</span>
-          </label>
-          <div className={styles.inputWithBtn}>
-            <input
-              className={styles.input}
-              placeholder="010-0000-0000"
-              value={phone}
-              onChange={(e) => setPhone(formatPhone(e.target.value))}
-              disabled={verified}
-            />
-            <Button
-              variant="secondary"
-              size="md"
-              disabled={!canSend || verified}
-              loading={loading}
-              onClick={handleSendCode}
-            >
-              {codeSent ? "재발송" : "인증번호 발송"}
-            </Button>
-          </div>
-        </div>
-
-        {codeSent && !verified && (
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>
-              인증번호 <span className={styles.required}>*</span>
-            </label>
-            <div className={styles.inputWithBtn}>
-              <div className={styles.inputTimer}>
-                <input
-                  className={styles.input}
-                  placeholder="인증번호 6자리"
-                  maxLength={AUTH_CODE_DIGITS}
-                  value={code}
-                  onChange={(e) =>
-                    setCode(
-                      e.target.value.replace(/\D/g, "").slice(0, AUTH_CODE_DIGITS)
-                    )
-                  }
-                />
-                {timeLeft > 0 ? (
-                  <span className={styles.timer}>
-                    {pad(Math.floor(timeLeft / 60))}:{pad(timeLeft % 60)}
-                  </span>
-                ) : (
-                  <span className={styles.timerExpired}>만료</span>
-                )}
-              </div>
-              <Button
-                variant="primary"
-                size="md"
-                disabled={!canVerify}
-                onClick={handleVerify}
-              >
-                인증하기
-              </Button>
-            </div>
-            {timeLeft === 0 && (
-              <p className={styles.fieldError}>
-                인증 시간이 만료되었습니다. 인증번호를 다시 발송해 주세요.
-              </p>
-            )}
-          </div>
-        )}
-
-        {verified && (
-          <div className={styles.verifiedBanner}>
-            <svg
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              width={18}
-              height={18}
-            >
-              <circle cx="10" cy="10" r="8" />
-              <polyline points="6.5 10.5 9 13 13.5 8" />
-            </svg>
-            본인인증이 완료되었습니다.
-          </div>
-        )}
-      </div>
+      {error && <p className={styles.fieldError}>{error}</p>}
 
       <div className={styles.stepActions}>
         <Button
           variant="primary"
           size="lg"
           fullWidth
-          disabled={!verified}
-          onClick={() => onNext(name, email)}
+          disabled={!canSubmit}
+          loading={loading}
+          onClick={handleNext}
         >
           다음
         </Button>
@@ -250,21 +98,38 @@ function VerifyStep({
   );
 }
 
-// ── Step 2: 새 비밀번호 설정 ───────────────────────────
+// ── Step 2: 새 비밀번호 설정 ───────────────────────────────
 function ResetStep({
+  email,
+  phone,
   onNext,
-  loading,
 }: {
-  onNext: (password: string) => void;
-  loading: boolean;
+  email: string;
+  phone: string;
+  onNext: () => void;
 }) {
   const [pw, setPw] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const pwWeak = pw.length > 0 && pw.length < MIN_PASSWORD_LENGTH;
   const pwMismatch = pwConfirm.length > 0 && pw !== pwConfirm;
   const canSubmit = pw.length >= MIN_PASSWORD_LENGTH && pw === pwConfirm;
+
+  const handleReset = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await resetPassword(email, phone, pw);
+      onNext();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "이메일 또는 휴대폰 번호가 일치하지 않습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={styles.stepContent}>
@@ -297,9 +162,7 @@ function ResetStep({
             </button>
           </div>
           {pwWeak && (
-            <p className={styles.fieldError}>
-              비밀번호는 8자 이상이어야 합니다.
-            </p>
+            <p className={styles.fieldError}>비밀번호는 8자 이상이어야 합니다.</p>
           )}
         </div>
 
@@ -320,6 +183,8 @@ function ResetStep({
         </div>
       </div>
 
+      {error && <p className={styles.fieldError}>{error}</p>}
+
       <div className={styles.stepActions}>
         <Button
           variant="primary"
@@ -327,7 +192,7 @@ function ResetStep({
           fullWidth
           disabled={!canSubmit}
           loading={loading}
-          onClick={() => onNext(pw)}
+          onClick={handleReset}
         >
           비밀번호 변경
         </Button>
@@ -336,7 +201,7 @@ function ResetStep({
   );
 }
 
-// ── Step 3: 완료 ────────────────────────────────────────
+// ── Step 3: 완료 ────────────────────────────────────────────
 function CompleteStep({ onComplete }: { onComplete: () => void }) {
   return (
     <div className={styles.completeWrap}>
@@ -344,7 +209,6 @@ function CompleteStep({ onComplete }: { onComplete: () => void }) {
         <svg
           viewBox="0 0 64 64"
           fill="none"
-          stroke="currentColor"
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -356,9 +220,7 @@ function CompleteStep({ onComplete }: { onComplete: () => void }) {
         </svg>
       </div>
       <h2 className={styles.completeTitle}>비밀번호가 변경되었습니다</h2>
-      <p className={styles.completeDesc}>
-        새 비밀번호로 로그인하실 수 있습니다.
-      </p>
+      <p className={styles.completeDesc}>새 비밀번호로 로그인하실 수 있습니다.</p>
       <div className={styles.stepActions}>
         <Button variant="primary" size="lg" onClick={onComplete}>
           로그인하기
@@ -368,13 +230,14 @@ function CompleteStep({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-// ── 메인 컴포넌트 ──────────────────────────────────────
+// ── 메인 컴포넌트 ──────────────────────────────────────────
 export default function ForgotPasswordPage({
   onComplete,
   onBack,
 }: ForgotPasswordPageProps) {
   const [step, setStep] = useState<Step>(1);
-  const [resetLoading, setResetLoading] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [verifiedPhone, setVerifiedPhone] = useState("");
 
   return (
     <div className={styles.page}>
@@ -446,18 +309,18 @@ export default function ForgotPasswordPage({
 
         {step === 1 && (
           <VerifyStep
-            onNext={(_name, _email) => setStep(2)}
+            onNext={(email, phone) => {
+              setVerifiedEmail(email);
+              setVerifiedPhone(phone);
+              setStep(2);
+            }}
           />
         )}
         {step === 2 && (
           <ResetStep
-            loading={resetLoading}
-            onNext={async (_password) => {
-              setResetLoading(true);
-              await new Promise((r) => setTimeout(r, 800));
-              setResetLoading(false);
-              setStep(3);
-            }}
+            email={verifiedEmail}
+            phone={verifiedPhone}
+            onNext={() => setStep(3)}
           />
         )}
         {step === 3 && <CompleteStep onComplete={onComplete} />}

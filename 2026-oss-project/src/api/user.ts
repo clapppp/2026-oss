@@ -18,9 +18,11 @@ export async function changePassword(currentPassword: string, newPassword: strin
   });
 }
 
-export async function verifyIdentity(): Promise<void> {
-  // TODO: PASS, 카카오 인증 등 외부 서비스 연동 후 구현
-  throw new Error("본인인증 서비스가 아직 연동되지 않았습니다.");
+export async function resetPassword(email: string, phone: string, newPassword: string): Promise<void> {
+  await request("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ email, phone, new_password: newPassword }),
+  });
 }
 
 export async function uploadPhoto(file: File): Promise<string> {

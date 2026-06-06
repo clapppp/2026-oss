@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
 import Button from "../components/common/Button";
+import Toast from "../components/common/Toast";
 import styles from "./MyPage.module.css";
 import { useAuth } from "../context/AuthContext";
-import { changePassword, verifyIdentity, uploadPhoto } from "../api/user";
+import { changePassword, uploadPhoto } from "../api/user";
 import Input from "../components/common/Input";
 import { EyeIcon } from "../components/common/icons";
 import { formatPhone, formatGender } from "../utils/formatters";
@@ -23,13 +24,16 @@ export default function MyPage({ onBack }: MyPageProps) {
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
+
+  const showToast = (message: string) => {
+    setToast({ message, visible: true });
+    setTimeout(() => setToast((t) => ({ ...t, visible: false })), 3000);
+  };
 
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const [verifying, setVerifying] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
   const [nationality, setNationality] = useState<"korean" | "foreign">(user?.nationality ?? "korean");
   const [penName, setPenName] = useState(user?.penName ?? "");
 
@@ -51,9 +55,13 @@ export default function MyPage({ onBack }: MyPageProps) {
       await updateUser({ phone, email, nationality, penName });
       if (pwChanging) {
         await changePassword(currentPw, newPw);
+        setCurrentPw("");
+        setNewPw("");
+        setNewPwConfirm("");
       }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      showToast("변경사항이 저장되었습니다.");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "저장 중 오류가 발생했습니다.");
     } finally {
       setSaving(false);
     }
@@ -66,22 +74,9 @@ export default function MyPage({ onBack }: MyPageProps) {
     setPhotoUrl(url);
   };
 
-  const handleVerify = async () => {
-    setVerifying(true);
-    setVerifyError(null);
-    try {
-      await verifyIdentity();
-      // 인증 완료 후 서버에서 갱신된 사용자 정보를 받아 상태를 업데이트해야 함
-      // (verifyIdentity 연동 시 반환값으로 처리)
-    } catch (e) {
-      setVerifyError(e instanceof Error ? e.message : "본인인증에 실패했습니다.");
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   return (
     <div className={styles.page}>
+      <Toast message={toast.message} visible={toast.visible} />
       <div className={styles.card}>
         {/* 헤더 */}
         <div className={styles.cardHeader}>
@@ -138,7 +133,7 @@ export default function MyPage({ onBack }: MyPageProps) {
           {/* 기본 정보 (수정 불가) */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>기본 정보</h2>
-            <p className={styles.sectionDesc}>본인 인증으로 확인된 정보로 수정이 불가합니다.</p>
+            <p className={styles.sectionDesc}>가입 시 등록된 정보로 수정이 불가합니다.</p>
             <div className={styles.readonlyGrid}>
               <div className={styles.readonlyRow}>
                 <span className={styles.readonlyLabel}>이름</span>
@@ -158,32 +153,6 @@ export default function MyPage({ onBack }: MyPageProps) {
           {/* 추가 정보 */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>추가 정보</h2>
-
-            {/* 본인 인증 */}
-            <div className={styles.field}>
-              <span className={styles.fieldLabel}>본인 인증</span>
-              <div className={styles.verifyRow}>
-                {(user?.isVerified ?? user?.verified) ? (
-                  <span className={styles.badgeVerified}>
-                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={13} height={13}>
-                      <circle cx="8" cy="8" r="6.5" />
-                      <polyline points="5 8.5 7 10.5 11 6.5" />
-                    </svg>
-                    인증 완료
-                  </span>
-                ) : (
-                  <>
-                    <span className={styles.badgeUnverified}>미인증</span>
-                    <Button variant="secondary" size="sm" loading={verifying} onClick={handleVerify}>
-                      본인 인증하기
-                    </Button>
-                  </>
-                )}
-              </div>
-              {verifyError && (
-                <p className={styles.fieldError}>{verifyError}</p>
-              )}
-            </div>
 
             {/* 국적 */}
             <div className={styles.field}>
@@ -303,17 +272,6 @@ export default function MyPage({ onBack }: MyPageProps) {
               {pwMismatch && <p className={styles.fieldError}>비밀번호가 일치하지 않습니다.</p>}
             </div>
           </section>
-
-          {/* 저장 완료 배너 */}
-          {saved && (
-            <div className={styles.savedBanner} role="status">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={16} height={16}>
-                <circle cx="10" cy="10" r="8" />
-                <polyline points="6.5 10.5 9 13 13.5 8" />
-              </svg>
-              변경사항이 저장되었습니다.
-            </div>
-          )}
 
           {/* 액션 버튼 */}
           <div className={styles.actions}>

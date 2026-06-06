@@ -39,7 +39,7 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
       options: ["시/시조", "수필", "소설/동화/청소년소설", "평전", "희곡", "평론", "문학작품집"],
     },
     { key: "publishDate", label: "발행일", type: "date", placeholder: "YYYY.MM.DD" },
-    { key: "volume", label: "작품 분량 (원고지 200매 기준)", type: "text", placeholder: "내용을 입력하세요" },
+    { key: "isbn", label: "ISBN", type: "text", placeholder: "예) 979-11-XXXXXXX-X" },
     {
       key: "character", label: "성격", type: "select",
       options: ["단편", "장편", "기타"],

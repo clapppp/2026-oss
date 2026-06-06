@@ -70,7 +70,7 @@ export interface ApplicationEntry {
   publisher: string;
   date: string;
   genre: string;
-  volume?: string;
+  isbn?: string;
   character?: string;
   method?: string;
   role?: string;
@@ -107,7 +107,7 @@ export interface EntryFiles {
 }
 
 export type EntryFieldKey =
-  | "title" | "publisher" | "genre" | "publishDate" | "volume" | "character"
+  | "title" | "publisher" | "genre" | "publishDate" | "isbn" | "character"
   | "venue" | "date" | "method" | "serialStart" | "serialEnd"
   | "programTitle" | "broadcaster" | "programType" | "role" | "company"
   | "performanceStartDate" | "performanceEndDate";

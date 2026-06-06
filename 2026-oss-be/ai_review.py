@@ -1,5 +1,6 @@
 import json
 import logging
+import datetime
 
 import anthropic
 
@@ -15,8 +16,12 @@ FILE_SLOT_LABELS = {
     "other":       "기타 서류",
 }
 
-SYSTEM_PROMPT = """당신은 예술인 활동증명 서류 검토 전문가입니다.
+def _build_system_prompt() -> str:
+    today = datetime.date.today().strftime("%Y년 %m월 %d일")
+    return f"""당신은 예술인 활동증명 서류 검토 전문가입니다.
 신청자가 폼에 입력한 정보, 회원 정보, KOPIS 공연 데이터(있는 경우), 첨부 파일의 OCR 추출 텍스트를 교차검증해주세요.
+
+오늘 날짜는 {today}입니다. 이 날짜를 기준으로 과거/현재/미래를 판단하세요.
 
 [검증 원칙]
 - 각 첨부 파일에 해당 항목의 작품명(또는 공연명/프로그램명)이 포함되어 있는지 확인하세요.
@@ -26,21 +31,21 @@ SYSTEM_PROMPT = """당신은 예술인 활동증명 서류 검토 전문가입�
 
 반드시 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 반환하세요.
 
-{
+{{
   "overall_summary": "전반적인 교차검증 결과 (2-3문장)",
   "is_sufficient": true | false,
   "issues": [
-    {
+    {{
       "severity": "error" | "warning",
       "category": "분야명",
       "entry_index": 0,
       "field": "불일치 필드명 또는 null",
       "file_slot": "해당 파일 슬롯명 또는 null",
       "message": "구체적인 불일치 또는 미포함 내용"
-    }
+    }}
   ],
   "suggestions": ["보완 제안 1", "보완 제안 2"]
-}
+}}
 
 severity 기준:
 - error: 작품명 미포함, 데이터 불일치 등 명확한 문제
@@ -116,7 +121,7 @@ def analyze_application(
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=2048,
-        system=SYSTEM_PROMPT,
+        system=_build_system_prompt(),
         messages=[{"role": "user", "content": user_content}],
     )
 
