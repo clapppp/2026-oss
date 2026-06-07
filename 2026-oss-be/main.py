@@ -588,7 +588,25 @@ async def submit_application(
 
     # DB에 즉시 저장 (ai_feedback_json 은 NULL — 백그라운드에서 채워짐)
     app_id   = str(uuid.uuid4())
-    apply_no = f"ART-{datetime.date.today().strftime('%Y%m%d')}-{app_id[:4].upper()}"
+    CATEGORY_PREFIX = {
+        "문학":        "LIT",
+        "일반미술":    "FAR",
+        "전통미술":    "TAR",
+        "디자인 / 공예": "DES",
+        "사진":        "PHO",
+        "만화":        "COM",
+        "영화":        "FLM",
+        "방송":        "BRD",
+        "공연":        "PFM",
+        "연극":        "THE",
+        "무용":        "DAN",
+        "국악":        "KMU",
+        "대중음악":    "POP",
+        "일반음악":    "MUS",
+    }
+    cat_names = [c["name"] for c in categories]
+    prefix = CATEGORY_PREFIX.get(cat_names[0], "ART") if len(cat_names) == 1 else "MIX"
+    apply_no = f"{prefix}-{datetime.date.today().strftime('%Y%m%d')}-{app_id[:4].upper()}"
     now      = datetime.date.today().isoformat()
 
     conn = get_db()
