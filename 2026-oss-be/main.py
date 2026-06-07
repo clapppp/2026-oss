@@ -135,7 +135,7 @@ def seed_accounts():
         {
             "id": "00000000-0000-0000-0000-000000000003",
             "name": "문지혁", "birth": "19950315", "gender": "M",
-            "phone": "01011112222", "email": "demo2@artpass.kr",
+            "phone": "01011112222", "email": "demo1@artpass.kr",
             "password": "password1!", "role": "user",
         },
         {
@@ -146,15 +146,17 @@ def seed_accounts():
         },
     ]
     for a in accounts:
-        exists = conn.execute("SELECT id FROM users WHERE email = ? OR id = ?", (a["email"], a["id"])).fetchone()
-        if not exists:
-            conn.execute(
-                """INSERT INTO users (id, name, birth, gender, phone, email, password_hash, role, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (a["id"], a["name"], a["birth"], a["gender"], a["phone"],
-                 a["email"], hash_password(a["password"]), a["role"],
-                 datetime.date.today().isoformat()),
-            )
+        conn.execute(
+            """INSERT INTO users (id, name, birth, gender, phone, email, password_hash, role, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+                   email         = excluded.email,
+                   password_hash = excluded.password_hash,
+                   phone         = excluded.phone""",
+            (a["id"], a["name"], a["birth"], a["gender"], a["phone"],
+             a["email"], hash_password(a["password"]), a["role"],
+             datetime.date.today().isoformat()),
+        )
     conn.commit()
     conn.close()
 
