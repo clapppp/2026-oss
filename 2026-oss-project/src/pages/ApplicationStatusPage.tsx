@@ -15,14 +15,24 @@ function getRejectedCount(entries: ApplicationEntry[]) {
 
 const STATUS_ORDER: AppStatus[] = ["반려", "심사중", "승인"];
 
-const STATUS_CFG: Record<AppStatus, { label: string; cls: string }> = {
-  심사중: { label: "심사중", cls: "badgePending"  },
-  승인:   { label: "승인",   cls: "badgeApproved" },
-  반려:   { label: "반려",   cls: "badgeRejected" },
+type DisplayStatus = "AI판독중" | "판독완료" | "승인" | "반려";
+
+function getDisplayStatus(app: Application): DisplayStatus {
+  if (app.status === "승인") return "승인";
+  if (app.status === "반려") return "반려";
+  return app.aiFeedback ? "판독완료" : "AI판독중";
+}
+
+const DISPLAY_STATUS_CFG: Record<DisplayStatus, { label: string; cls: string }> = {
+  "AI판독중": { label: "AI 판독중", cls: "badgePending"  },
+  "판독완료":  { label: "판독완료",  cls: "badgeReviewed" },
+  "승인":      { label: "승인",      cls: "badgeApproved" },
+  "반려":      { label: "반려",      cls: "badgeRejected" },
 };
 
-function StatusBadge({ status }: { status: AppStatus }) {
-  const { label, cls } = STATUS_CFG[status];
+function StatusBadge({ app }: { app: Application }) {
+  const ds = getDisplayStatus(app);
+  const { label, cls } = DISPLAY_STATUS_CFG[ds];
   return <span className={`${styles.badge} ${styles[cls]}`}>{label}</span>;
 }
 
@@ -33,11 +43,14 @@ const ENTRY_STATUS_CFG: Record<EntryStatus, { label: string; cls: string }> = {
 };
 
 // ── 타임라인 ──────────────────────────────────────────────────
-const STEPS = ["접수 완료", "서류 심사", "심사 완료"];
+const STEPS = ["접수 완료", "AI 판독중", "판독완료"];
 
-function StatusTimeline({ status }: { status: AppStatus }) {
-  const active = status === "심사중" ? 1 : status === "승인" ? STEPS.length : 2;
-  const isRejected = status === "반려";
+function StatusTimeline({ app }: { app: Application }) {
+  const ds = getDisplayStatus(app);
+  // 접수완료(0) → AI판독중(1) → 판독완료(2)
+  // active: 현재 진행 중인 인덱스
+  const active = ds === "AI판독중" ? 1 : 2;
+  const isRejected = ds === "반려";
 
   return (
     <div className={styles.timeline}>
@@ -117,16 +130,31 @@ function StatusBanner({ app }: { app: Application }) {
     </div>
   );
 
-  return (
+  const ds = getDisplayStatus(app);
+
+  if (ds === "AI판독중") return (
     <div className={`${styles.statusBanner} ${styles.bannerPending}`}>
       <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" width={28} height={28} aria-hidden="true">
         <circle cx="12" cy="12" r="12" fill="#d97706" />
-        <line x1="12" y1="7" x2="12" y2="13" stroke="#fff" strokeWidth={2.5} />
+        <path d="M8 12h4M12 8v4" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" />
         <circle cx="12" cy="16.5" r="1.3" fill="#fff" />
       </svg>
       <div>
-        <p className={styles.bannerTitle}>서류 심사가 진행 중입니다</p>
-        <p className={styles.bannerDesc}>총 {app.entries.length}건의 실적을 검토 중입니다. 신청일로부터 평균 14일 내 완료되며 결과를 안내드립니다.</p>
+        <p className={styles.bannerTitle}>AI 판독 중입니다</p>
+        <p className={styles.bannerDesc}>제출하신 서류를 AI가 교차검증하고 있습니다. 잠시 후 다시 확인해 주세요.</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`${styles.statusBanner} ${styles.bannerReviewed}`}>
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" width={28} height={28} aria-hidden="true">
+        <circle cx="12" cy="12" r="12" fill="#2563eb" />
+        <polyline points="6 12.5 10 16 18 8" stroke="#fff" strokeWidth={2.5} />
+      </svg>
+      <div>
+        <p className={styles.bannerTitle}>AI 판독이 완료되었습니다</p>
+        <p className={styles.bannerDesc}>총 {app.entries.length}건의 실적에 대한 AI 검토가 완료되었습니다. 아래에서 결과를 확인하세요.</p>
       </div>
     </div>
   );
@@ -497,7 +525,7 @@ function DetailPanel({ app, onClose, onReapply }: { app: Application; onClose: (
 
           {/* ── 진행 단계 ── */}
           <div className={styles.timelineCard}>
-            <StatusTimeline status={app.status} />
+            <StatusTimeline app={app} />
           </div>
 
           {/* ── AI 사전 검토 ── */}
@@ -595,7 +623,7 @@ function ListItem({ app, active, onClick }: { app: Application; active: boolean;
     >
       <div className={styles.itemRow1}>
         <span className={styles.itemFieldType}>{fieldType}</span>
-        <StatusBadge status={app.status} />
+        <StatusBadge app={app} />
       </div>
       <div className={styles.itemCategories}>
         {app.categories.map((cat) => (

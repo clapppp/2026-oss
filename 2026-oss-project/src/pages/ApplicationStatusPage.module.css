@@ -67,6 +67,7 @@
 }
 
 .badgePending  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.badgeReviewed { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
 .badgeApproved { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 .badgeRejected { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 
@@ -308,9 +309,10 @@
   flex-shrink: 0;
 }
 
-.bannerApproved { background: #f0fdf4; border-color: #bbf7d0; }
-.bannerRejected { background: #fef2f2; border-color: #fecaca; }
-.bannerPending  { background: #fffbeb; border-color: #fde68a; }
+.bannerApproved  { background: #f0fdf4; border-color: #bbf7d0; }
+.bannerRejected  { background: #fef2f2; border-color: #fecaca; }
+.bannerPending   { background: #fffbeb; border-color: #fde68a; }
+.bannerReviewed  { background: #eff6ff; border-color: #bfdbfe; }
 
 .bannerTitle {
   font-size: 13.5px;
