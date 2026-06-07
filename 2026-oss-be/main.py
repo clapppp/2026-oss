@@ -207,7 +207,7 @@ def app_schema(a: dict, applicant_name: str) -> dict:
     categories = list(dict.fromkeys(e["category"] for e in entries))
     ai_feedback = json.loads(a["ai_feedback_json"]) if a.get("ai_feedback_json") else None
     return {
-        "id":            a["id"],
+        "id":            a["apply_no"],
         "applyNo":       a["apply_no"],
         "applyDate":     a["apply_date"],
         "type":          a["type"],
@@ -436,14 +436,14 @@ def review_application(
         raise HTTPException(status_code=422, detail="반려 시 사유를 입력해야 합니다")
 
     conn = get_db()
-    row = conn.execute("SELECT id FROM applications WHERE id = ?", (app_id,)).fetchone()
+    row = conn.execute("SELECT apply_no FROM applications WHERE apply_no = ?", (app_id,)).fetchone()
     if not row:
         conn.close()
         raise HTTPException(status_code=404, detail="신청 건을 찾을 수 없습니다")
 
     now = datetime.date.today().isoformat()
     conn.execute(
-        "UPDATE applications SET status = ?, reason = ?, status_date = ? WHERE id = ?",
+        "UPDATE applications SET status = ?, reason = ?, status_date = ? WHERE apply_no = ?",
         (body.status, body.reason, now, app_id),
     )
     conn.commit()
@@ -452,7 +452,7 @@ def review_application(
     return ok({"id": app_id, "status": body.status})
 
 
-def _run_ai_pipeline(app_id: str, categories: list, raw_files: dict, user_info: dict):
+def _run_ai_pipeline(apply_no: str, categories: list, raw_files: dict, user_info: dict):
     """백그라운드: KOPIS + AI 처리 후 DB 업데이트"""
     kopis_by_category: dict = {}
     try:
@@ -471,12 +471,12 @@ def _run_ai_pipeline(app_id: str, categories: list, raw_files: dict, user_info: 
 
     conn = get_db()
     conn.execute(
-        "UPDATE applications SET ai_feedback_json = ? WHERE id = ?",
-        (json.dumps(ai_feedback, ensure_ascii=False), app_id),
+        "UPDATE applications SET ai_feedback_json = ? WHERE apply_no = ?",
+        (json.dumps(ai_feedback, ensure_ascii=False), apply_no),
     )
     conn.commit()
     conn.close()
-    log.debug("[AI 파이프라인 완료] app_id=%s", app_id)
+    log.debug("[AI 파이프라인 완료] apply_no=%s", apply_no)
 
 
 @app.get("/api/applications/{app_id}/file")
@@ -491,7 +491,7 @@ def download_entry_file(
     import base64 as b64
     conn = get_db()
     row = conn.execute(
-        "SELECT entries_json, user_id FROM applications WHERE id = ?", (app_id,)
+        "SELECT entries_json, user_id FROM applications WHERE apply_no = ?", (app_id,)
     ).fetchone()
     conn.close()
     if not row:
@@ -587,7 +587,7 @@ async def submit_application(
         entry["files"] = cat_entry_files.get(cat, {}).get(idx, [])
 
     # DB에 즉시 저장 (ai_feedback_json 은 NULL — 백그라운드에서 채워짐)
-    app_id   = str(uuid.uuid4())
+    import secrets
     CATEGORY_PREFIX = {
         "문학":        "LIT",
         "일반미술":    "FAR",
@@ -606,7 +606,8 @@ async def submit_application(
     }
     cat_names = [c["name"] for c in categories]
     prefix = CATEGORY_PREFIX.get(cat_names[0], "ART") if len(cat_names) == 1 else "MIX"
-    apply_no = f"{prefix}-{datetime.date.today().strftime('%Y%m%d')}-{app_id[:4].upper()}"
+    suffix = secrets.token_hex(2).upper()  # 랜덤 4자리 16진수
+    apply_no = f"{prefix}-{datetime.date.today().strftime('%Y%m%d')}-{suffix}"
     now      = datetime.date.today().isoformat()
 
     conn = get_db()
@@ -614,7 +615,7 @@ async def submit_application(
         """INSERT INTO applications
                (id, apply_no, user_id, type, status, status_date, apply_date, entries_json, ai_feedback_json)
            VALUES (?, ?, ?, ?, '심사중', ?, ?, ?, NULL)""",
-        (app_id, apply_no, current_user["id"],
+        (apply_no, apply_no, current_user["id"],
          meta.get("type", "일반 유형 · 단일 분야"),
          now, now,
          json.dumps(entries, ensure_ascii=False)),
@@ -625,7 +626,7 @@ async def submit_application(
     # KOPIS + AI를 백그라운드에서 처리
     background_tasks.add_task(
         _run_ai_pipeline,
-        app_id,
+        apply_no,
         meta.get("categories", []),
         raw_files,
         {
