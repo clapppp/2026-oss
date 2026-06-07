@@ -5,6 +5,7 @@ import hashlib
 import datetime
 import os
 import logging
+import asyncio
 from typing import Optional
 
 logging.basicConfig(
@@ -452,8 +453,8 @@ def review_application(
     return ok({"id": app_id, "status": body.status})
 
 
-def _run_ai_pipeline(apply_no: str, categories: list, raw_files: dict, user_info: dict):
-    """백그라운드: KOPIS + AI 처리 후 DB 업데이트"""
+def _kopis_and_ai_blocking(categories, raw_files, user_info) -> dict:
+    """블로킹 작업 묶음 — 스레드풀에서 실행됨"""
     kopis_by_category: dict = {}
     try:
         kopis_by_category = lookup_all_entries(KOPIS_API_KEY, categories)
@@ -462,20 +463,30 @@ def _run_ai_pipeline(apply_no: str, categories: list, raw_files: dict, user_info
         log.debug("[KOPIS 오류] %s", e)
 
     try:
-        ai_feedback = analyze_full_application(
+        return analyze_full_application(
             ai_client, categories, raw_files, user_info,
             kopis_by_category=kopis_by_category or None,
         )
     except Exception as e:
-        ai_feedback = {"error": str(e), "is_sufficient": None, "by_category": {}, "all_issues": [], "all_suggestions": []}
+        return {"error": str(e), "is_sufficient": None, "by_category": {}, "all_issues": [], "all_suggestions": []}
 
-    conn = get_db()
-    conn.execute(
-        "UPDATE applications SET ai_feedback_json = ? WHERE apply_no = ?",
-        (json.dumps(ai_feedback, ensure_ascii=False), apply_no),
+
+async def _run_ai_pipeline(apply_no: str, categories: list, raw_files: dict, user_info: dict):
+    """백그라운드: KOPIS + AI를 스레드풀에서 처리 후 DB 업데이트 (이벤트 루프 블로킹 방지)"""
+    ai_feedback = await asyncio.to_thread(
+        _kopis_and_ai_blocking, categories, raw_files, user_info
     )
-    conn.commit()
-    conn.close()
+
+    def _save():
+        conn = get_db()
+        conn.execute(
+            "UPDATE applications SET ai_feedback_json = ? WHERE apply_no = ?",
+            (json.dumps(ai_feedback, ensure_ascii=False), apply_no),
+        )
+        conn.commit()
+        conn.close()
+
+    await asyncio.to_thread(_save)
     log.debug("[AI 파이프라인 완료] apply_no=%s", apply_no)
 
 
