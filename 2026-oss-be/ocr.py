@@ -28,15 +28,11 @@ def _extract_pdf(file_bytes: bytes) -> str:
         doc = fitz.open(stream=file_bytes, filetype="pdf")
         texts = []
         for page in doc:
-            text = page.get_text().strip()
-            if text:
-                texts.append(text)
-            else:
-                # 스캔 PDF: 이미지로 렌더링 후 OCR
-                pix = page.get_pixmap(dpi=200)
-                ocr = _ocr_image_bytes(pix.tobytes("png"), suffix=".png")
-                if ocr:
-                    texts.append(ocr)
+            # 모든 페이지를 이미지로 렌더링 후 OCR (300 DPI)
+            pix = page.get_pixmap(dpi=300)
+            ocr = _ocr_image_bytes(pix.tobytes("png"), suffix=".png")
+            if ocr:
+                texts.append(ocr)
         doc.close()
         return "\n".join(texts)
     except Exception:
