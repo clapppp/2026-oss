@@ -146,7 +146,7 @@ def seed_accounts():
         },
     ]
     for a in accounts:
-        exists = conn.execute("SELECT id FROM users WHERE email = ?", (a["email"],)).fetchone()
+        exists = conn.execute("SELECT id FROM users WHERE email = ? OR id = ?", (a["email"], a["id"])).fetchone()
         if not exists:
             conn.execute(
                 """INSERT INTO users (id, name, birth, gender, phone, email, password_hash, role, created_at)
