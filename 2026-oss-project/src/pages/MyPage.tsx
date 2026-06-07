@@ -31,7 +31,7 @@ export default function MyPage({ onBack }: MyPageProps) {
     setTimeout(() => setToast((t) => ({ ...t, visible: false })), 3000);
   };
 
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(user?.profileImage || null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [nationality, setNationality] = useState<"korean" | "foreign">(user?.nationality ?? "korean");
@@ -70,8 +70,14 @@ export default function MyPage({ onBack }: MyPageProps) {
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = await uploadPhoto(file);
-    setPhotoUrl(url);
+    try {
+      const url = await uploadPhoto(file);
+      setPhotoUrl(url);
+      updateUser({ profileImage: url });
+      showToast("프로필 사진이 변경되었습니다.");
+    } catch {
+      showToast("사진 업로드에 실패했습니다.");
+    }
   };
 
   return (

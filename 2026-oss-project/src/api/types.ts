@@ -9,6 +9,7 @@ export interface User {
   verified?: boolean;
   nationality: "korean" | "foreign";
   penName: string;
+  profileImage?: string;
   role: "user" | "admin";
 }
 

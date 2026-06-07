@@ -18,7 +18,7 @@ log = logging.getLogger("artpass")
 import jwt
 import anthropic
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks, UploadFile, File
 from starlette.requests import ClientDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -70,6 +70,7 @@ def init_db():
             password_hash TEXT NOT NULL,
             nationality   TEXT DEFAULT 'korean',
             pen_name      TEXT DEFAULT '',
+            profile_image TEXT DEFAULT '',
             role          TEXT DEFAULT 'user',
             created_at    TEXT NOT NULL
         );
@@ -88,10 +89,20 @@ def init_db():
         );
     """)
     conn.commit()
+    # 기존 DB에 profile_image 컬럼 없으면 추가 (마이그레이션)
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN profile_image TEXT DEFAULT ''")
+        conn.commit()
+    except Exception:
+        pass  # 이미 존재하면 무시
     conn.close()
 
 
 init_db()
+
+# 프로필 사진 저장 디렉토리
+PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "photos")
+os.makedirs(PHOTOS_DIR, exist_ok=True)
 
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
@@ -175,14 +186,15 @@ def ok(data, message: Optional[str] = None):
 
 def user_schema(u: dict) -> dict:
     return {
-        "name":        u["name"],
-        "birth":       u["birth"],
-        "gender":      u["gender"],
-        "phone":       u["phone"],
-        "email":       u["email"],
-        "nationality": u["nationality"],
-        "penName":     u["pen_name"],
-        "role":        u["role"],
+        "name":         u["name"],
+        "birth":        u["birth"],
+        "gender":       u["gender"],
+        "phone":        u["phone"],
+        "email":        u["email"],
+        "nationality":  u["nationality"],
+        "penName":      u["pen_name"],
+        "profileImage": u.get("profile_image") or "",
+        "role":         u["role"],
     }
 
 
@@ -350,6 +362,25 @@ def update_profile(body: UpdateProfileBody, current_user: dict = Depends(get_cur
 
     u = dict(row)
     return ok(user_schema(u))
+
+
+@app.post("/api/user/photo")
+async def upload_photo(photo: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    # 확장자 검증
+    ext = os.path.splitext(photo.filename or "")[1].lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
+        ext = ".jpg"
+    filename = f"{current_user['id']}{ext}"
+    filepath = os.path.join(PHOTOS_DIR, filename)
+    content = await photo.read()
+    with open(filepath, "wb") as f:
+        f.write(content)
+    url = f"/photos/{filename}"
+    conn = get_db()
+    conn.execute("UPDATE users SET profile_image = ? WHERE id = ?", (url, current_user["id"]))
+    conn.commit()
+    conn.close()
+    return ok({"url": url})
 
 
 @app.patch("/api/auth/password")
@@ -588,6 +619,9 @@ async def submit_application(
 
     return ok({"applyNo": apply_no})
 
+
+# ── 프로필 사진 정적 파일 서빙 ────────────────────────────────────────────────
+app.mount("/photos", StaticFiles(directory=PHOTOS_DIR), name="photos")
 
 # ── 프론트엔드 정적 파일 서빙 (빌드된 dist/) ─────────────────────────────────
 _dist = os.path.join(os.path.dirname(__file__), "../2026-oss-project/dist")

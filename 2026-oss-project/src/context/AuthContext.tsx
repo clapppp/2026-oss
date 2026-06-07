@@ -61,16 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUser = async (updates: Partial<User>) => {
-    const { phone, email, nationality, penName } = updates;
+    const { phone, email, nationality, penName, profileImage } = updates;
     const profilePayload: UpdateProfilePayload = {};
     if (phone !== undefined) profilePayload.phone = phone;
     if (email !== undefined) profilePayload.email = email;
     if (nationality !== undefined) profilePayload.nationality = nationality;
     if (penName !== undefined) profilePayload.penName = penName;
-    if (Object.keys(profilePayload).length > 0) {
+    // profileImage는 /api/user/photo에서 이미 저장됨 — profile 엔드포인트 호출 불필요
+    if (profileImage === undefined && Object.keys(profilePayload).length > 0) {
       await updateProfile(profilePayload); // 실패 시 예외를 호출자로 전파
     }
-    // API 성공 후 로컬 상태 업데이트
+    // 로컬 상태 업데이트
     setUser((prev) => {
       const next = prev ? { ...prev, ...updates } : prev;
       if (next) localStorage.setItem(USER_KEY, JSON.stringify(next));
