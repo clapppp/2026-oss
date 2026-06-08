@@ -13,7 +13,7 @@ export interface CategoryMeta {
 }
 
 export const CATEGORY_META: Record<string, CategoryMeta> = {
-  "문학":         { minCount: 5, unit: "편", hint: "시/시조/수필 5편, 평론 3편, 단편소설 3편, 소설·희곡·평전 1편 이상" },
+  "문학":         { minCount: 1, unit: "편", hint: "시/시조·수필 5편, 평론 3편, 단편소설 3편, 소설(장편)·희곡·평전·문학작품집 1편 이상 (장르별 기준)" },
   "디자인 / 공예":{ minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
   "일반미술":     { minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
   "전통미술":     { minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
@@ -22,7 +22,7 @@ export const CATEGORY_META: Record<string, CategoryMeta> = {
   "만화":         { minCount: 5, unit: "편", hint: "작품 발표 5편 이상 (연재의 경우 6개월 이상 1편)" },
   "방송":         { minCount: 3, unit: "편", hint: "드라마·예능·교양 프로그램 출연 3편 이상" },
   "공연":         { minCount: 3, unit: "편", hint: "공연 출연 3편 이상" },
-  "연극":         { minCount: 3, unit: "편", hint: "연극 공연 출연 3편 이상" },
+  "연극":         { minCount: 1, unit: "편", hint: "출연 3편, 연출·희곡집필 1편, 비평 3편 이상 (역할별 기준)" },
   "무용":         { minCount: 3, unit: "편", hint: "무용 공연 출연 3편 이상" },
   "영화":         { minCount: 3, unit: "편", hint: "상영영화 출연 3편 이상" },
   "국악":         { minCount: 3, unit: "편", hint: "공연 출연 또는 악곡 발표 3편 이상" },
