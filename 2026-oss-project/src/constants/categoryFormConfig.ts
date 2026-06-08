@@ -150,10 +150,6 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   "연극": [
     { key: "title", label: "공연명 / 작품명", type: "text", placeholder: "내용을 입력하세요" },
     {
-      key: "genre", label: "세부장르", type: "select",
-      options: ["정극", "뮤지컬", "오페라", "마당극", "낭독극", "인형극", "기타"],
-    },
-    {
       key: "role", label: "역할", type: "select",
       options: ["출연", "연출", "희곡집필 (공연 통해)", "희곡집필 (잡지 등)", "비평"],
     },
