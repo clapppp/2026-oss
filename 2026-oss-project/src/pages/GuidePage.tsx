@@ -101,10 +101,10 @@ const FAQ = [
 ];
 
 const MEMBERS = [
-  { name: "방지원", role: "팀장 · 총괄", github: "z1-won" },
-  { name: "김서연", role: "프론트엔드", github: "seoyeon6894" },
-  { name: "박수현", role: "백엔드", github: "clapppp" },
-  { name: "위인준", role: "AI · 기획", github: "dnldlswns" },
+  { name: "방지원", role: "팀장 · 총괄",  github: "z1-won",     image: "/방지원.jpeg" },
+  { name: "김서연", role: "프론트엔드",    github: "seoyeon6894", image: "/김서연.png"  },
+  { name: "박수현", role: "백엔드",        github: "clapppp",     image: "/박수현.png"  },
+  { name: "위인준", role: "AI · 기획",    github: "dnldlswns",   image: "/위인준.png"  },
 ];
 
 export default function GuidePage({ onApply }: GuidePageProps) {
@@ -229,11 +229,7 @@ export default function GuidePage({ onApply }: GuidePageProps) {
             {MEMBERS.map((m) => (
               <div key={m.name} className={styles.memberCard}>
                 <div className={styles.memberAvatar}>
-                  <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={36} height={36}>
-                    <circle cx="20" cy="20" r="18" />
-                    <circle cx="20" cy="16" r="6" />
-                    <path d="M8 34c0-6 5.4-10 12-10s12 4 12 10" />
-                  </svg>
+                  <img src={m.image} alt={m.name} className={styles.memberAvatarImg} loading="lazy" />
                 </div>
                 <div className={styles.memberInfo}>
                   <span className={styles.memberName}>{m.name}</span>
