@@ -21,6 +21,19 @@ const LIT_GENRE_MIN: Record<string, { min: number; unit: string; label: string }
   "문학작품집":       { min: 1, unit: "권", label: "문학작품집" },
 };
 
+export interface CategoryProgress {
+  /** 비율 기반 분야 여부 */
+  isRatioBased: boolean;
+  /** 비율 합계 (0.0 ~ 1.0+) */
+  ratio: number;
+  /** 기준 충족 여부 */
+  meetsMin: boolean;
+  /** 최대 입력 가능 편수 */
+  maxEntries: number;
+  /** 역할·장르별 현황 태그 배열 */
+  tags: { label: string; count: number; min: number }[];
+}
+
 /** 비율 합계 방식: 각 그룹의 (실제 수 / 최소 수) 합이 1 이상이면 통과 */
 function ratioSum(counts: Record<string, number>, minMap: Record<string, number>): number {
   let total = 0;
@@ -87,6 +100,40 @@ function validateLiterature(entries: Record<string, string>[]): string | null {
   }
 
   return null;
+}
+
+/** 분야별 진행 현황 반환 (ApplyPage 표시용) */
+export function getCategoryProgress(
+  cat: string,
+  entries: Record<string, string>[],
+): CategoryProgress {
+  if (cat === "연극") {
+    const counts: Record<string, number> = {};
+    for (const e of entries) {
+      if (e.role) counts[e.role] = (counts[e.role] ?? 0) + 1;
+    }
+    const minMap = Object.fromEntries(Object.entries(THEATER_ROLE_MIN).map(([k, v]) => [k, v.min]));
+    const ratio = ratioSum(counts, minMap);
+    const tags = Object.entries(counts)
+      .filter(([role]) => THEATER_ROLE_MIN[role])
+      .map(([role, count]) => ({ label: role, count, min: THEATER_ROLE_MIN[role].min }));
+    return { isRatioBased: true, ratio, meetsMin: ratio >= 1, maxEntries: 20, tags };
+  }
+
+  if (cat === "문학") {
+    const counts: Record<string, number> = {};
+    for (const e of entries) {
+      if (e.genre) counts[e.genre] = (counts[e.genre] ?? 0) + 1;
+    }
+    const minMap = Object.fromEntries(Object.entries(LIT_GENRE_MIN).map(([k, v]) => [k, v.min]));
+    const ratio = ratioSum(counts, minMap);
+    const tags = Object.entries(counts)
+      .filter(([genre]) => LIT_GENRE_MIN[genre])
+      .map(([genre, count]) => ({ label: LIT_GENRE_MIN[genre].label, count, min: LIT_GENRE_MIN[genre].min }));
+    return { isRatioBased: true, ratio, meetsMin: ratio >= 1, maxEntries: 20, tags };
+  }
+
+  return { isRatioBased: false, ratio: 0, meetsMin: false, maxEntries: 0, tags: [] };
 }
 
 export function validateApplicationStep2(

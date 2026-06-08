@@ -12,7 +12,7 @@ import { CATEGORIES } from "../constants/categories";
 import { useAuth } from "../context/AuthContext";
 import { submitApplication } from "../api/application";
 import type { SubmitApplicationRequest, EvidenceSlot } from "../api/types";
-import { validateApplicationStep2 } from "../utils/validation";
+import { validateApplicationStep2, getCategoryProgress } from "../utils/validation";
 import { formatGender } from "../utils/formatters";
 import { MAX_CATEGORIES } from "../constants/rules";
 import { formatDraftDate, type ApplyDraft } from "../utils/draft";
@@ -319,17 +319,25 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                 const meta = CATEGORY_META[cat];
                 if (!fields || !meta) return null;
                 const entries = getEntries(cat);
-                const maxCount = meta.minCount;
+                const progress = getCategoryProgress(cat, entries);
+                const maxCount = progress.isRatioBased ? progress.maxEntries : meta.minCount;
                 const atMax = entries.length >= maxCount;
                 const filled = entries.filter((e) => Object.values(e).some((v) => v.trim?.())).length;
-                const meetsMin = filled >= meta.minCount;
+                const meetsMin = progress.isRatioBased ? progress.meetsMin : filled >= meta.minCount;
+                const pct = Math.min(100, Math.round(progress.ratio * 100));
                 return (
                   <div key={cat} className="categoryFormBlock">
                     <div className="categoryFormHeader">
                       <h3 className="categoryFormTitle">{cat}</h3>
-                      <span className={`categoryFormCount ${meetsMin ? "categoryFormCountOk" : ""}`}>
-                        {entries.length} / {maxCount}{meta.unit}
-                      </span>
+                      {progress.isRatioBased ? (
+                        <span className={`categoryFormCount ${meetsMin ? "categoryFormCountOk" : ""}`}>
+                          달성률 {pct}%
+                        </span>
+                      ) : (
+                        <span className={`categoryFormCount ${meetsMin ? "categoryFormCountOk" : ""}`}>
+                          {entries.length} / {maxCount}{meta.unit}
+                        </span>
+                      )}
                       <button
                         type="button"
                         className="categoryRemoveBtn"
@@ -343,6 +351,18 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                       </button>
                     </div>
                     <p className="categoryFormHint">{meta.hint}</p>
+                    {progress.isRatioBased && progress.tags.length > 0 && (
+                      <div className="ratioTags">
+                        {progress.tags.map(({ label, count, min }) => (
+                          <span
+                            key={label}
+                            className={`ratioTag ${count >= min ? "ratioTagOk" : ""}`}
+                          >
+                            {label} {count}/{min}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {entries.map((entry, idx) => (
                       <div key={idx} className="entryBlock">
