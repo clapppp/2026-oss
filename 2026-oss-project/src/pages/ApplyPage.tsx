@@ -179,11 +179,11 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
               </p>
               <div className="identityTable">
                 <InfoRow label="이름" value={user?.name ?? ""} />
+                <InfoRow label="필명" value={user?.penName || "미등록"} />
                 <InfoRow label="생년월일" value={user?.birth ?? ""} />
                 <InfoRow label="성별" value={user ? formatGender(user.gender) : ""} />
                 <InfoRow label="휴대폰" value={user?.phone ?? ""} />
                 <InfoRow label="이메일" value={user?.email ?? ""} />
-                <InfoRow label="필명" value={user?.penName || "미등록"} />
               </div>
             </section>
             <div className="actionRow">
@@ -270,25 +270,21 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                             const isbnDigits = field.key === "isbn"
                               ? (entry["isbn"] ?? "").replace(/[^0-9]/g, "")
                               : null;
-                            const isbnError = isbnDigits !== null
-                              && isbnDigits.length > 0
-                              && isbnDigits.length !== 13;
+                            const isbnInlineError =
+                              isbnDigits !== null && isbnDigits.length > 0 && isbnDigits.length !== 13
+                                ? `숫자 13자리여야 합니다 (현재 ${isbnDigits.length}자리)`
+                                : undefined;
                             return (
-                              <React.Fragment key={field.key}>
-                                <FormField
-                                  label={field.label}
-                                  type={field.type}
-                                  placeholder={field.placeholder}
-                                  options={field.options}
-                                  value={entry[field.key] ?? ""}
-                                  onChange={handleCategoryField(cat, idx, field.key)}
-                                />
-                                {isbnError && (
-                                  <p className="isbnError">
-                                    ISBN은 숫자 13자리여야 합니다. (현재 {isbnDigits!.length}자리)
-                                  </p>
-                                )}
-                              </React.Fragment>
+                              <FormField
+                                key={field.key}
+                                label={field.label}
+                                type={field.type}
+                                placeholder={field.placeholder}
+                                options={field.options}
+                                value={entry[field.key] ?? ""}
+                                onChange={handleCategoryField(cat, idx, field.key)}
+                                inlineError={isbnInlineError}
+                              />
                             );
                           })}
                         </div>
@@ -370,11 +366,11 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                 <h2 className="sectionTitle">신청인 정보</h2>
                 <div className="identityTable">
                   <InfoRow label="이름" value={user?.name ?? ""} />
+                  <InfoRow label="필명" value={user?.penName || "미등록"} />
                   <InfoRow label="생년월일" value={user?.birth ?? ""} />
                   <InfoRow label="성별" value={user ? formatGender(user.gender) : ""} />
                   <InfoRow label="휴대폰" value={user?.phone ?? ""} />
                   <InfoRow label="이메일" value={user?.email ?? ""} />
-                  <InfoRow label="필명" value={user?.penName || "미등록"} />
                 </div>
               </section>
 

@@ -4,7 +4,7 @@ import Input from "../components/common/Input";
 import { EyeIcon } from "../components/common/icons";
 import { formatPhone } from "../utils/formatters";
 import { MIN_PASSWORD_LENGTH, PHONE_DIGITS, getPasswordError } from "../constants/rules";
-import { resetPassword } from "../api/user";
+import { resetPassword, verifyUser } from "../api/user";
 import styles from "./ForgotPasswordPage.module.css";
 
 interface ForgotPasswordPageProps {
@@ -37,9 +37,10 @@ function VerifyStep({
     setError("");
     setLoading(true);
     try {
-      // 실제 일치 여부는 비밀번호 변경 시 서버에서 검증하므로
-      // 여기선 형식만 확인하고 다음 단계로 넘김
+      await verifyUser(email, phone);
       onNext(email, phone);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "이메일 또는 휴대폰 번호가 일치하지 않습니다.");
     } finally {
       setLoading(false);
     }

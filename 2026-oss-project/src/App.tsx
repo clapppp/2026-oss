@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "./components/organisms/Header";
 import Footer from "./components/organisms/Footer";
 import ArtPassLogo from "./components/common/ArtPassLogo";
@@ -20,11 +20,45 @@ import { PersonIcon, LoginIcon, LogoutIcon, MyPageIcon } from "./components/comm
 import "./App.css";
 import { NAV_ITEMS_CONFIG, ADMIN_NAV_ITEMS_CONFIG, PROTECTED_PAGES, ADMIN_PAGES, USER_PAGES, POLICY_LINKS, FAMILY_SITES, type Page } from "./constants/navigation";
 
+const PAGE_TO_HASH: Record<Page, string> = {
+  main:         "",
+  apply:        "apply",
+  status:       "status",
+  signup:       "signup",
+  login:        "login",
+  mypage:       "mypage",
+  guide:        "guide",
+  findPassword: "forgot-password",
+  admin:        "admin",
+};
+const HASH_TO_PAGE: Record<string, Page> = Object.fromEntries(
+  Object.entries(PAGE_TO_HASH).map(([p, h]) => [h, p as Page])
+);
+function getPageFromHash(): Page {
+  const hash = window.location.hash.replace(/^#\/?/, "");
+  return HASH_TO_PAGE[hash] ?? "main";
+}
+
 export default function App() {
-  const [page, setPage] = useState<Page>("main");
+  const [page, setPage] = useState<Page>(getPageFromHash);
   const [prevPage, setPrevPage] = useState<Page>("main");
   const [pendingPage, setPendingPage] = useState<Page | null>(null);
   const { isLoggedIn, isAdmin, logout } = useAuth();
+
+  // page → URL 동기화
+  useEffect(() => {
+    const hash = "#/" + PAGE_TO_HASH[page];
+    if (window.location.hash !== hash) {
+      window.history.pushState({ page }, "", hash);
+    }
+  }, [page]);
+
+  // 브라우저 뒤로/앞으로 → page 동기화
+  useEffect(() => {
+    const handler = () => setPage(getPageFromHash());
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, []);
 
   const navigateTo = (target: Page) => {
     if (PROTECTED_PAGES.includes(target) && !isLoggedIn) {
@@ -55,7 +89,7 @@ export default function App() {
   const navConfig = isAdmin ? ADMIN_NAV_ITEMS_CONFIG : NAV_ITEMS_CONFIG;
   const navItems = navConfig.map((item) => ({
     label: item.label,
-    href: "#",
+    href: item.page ? "#/" + PAGE_TO_HASH[item.page] : "#",
     active: item.page === page,
     onClick: item.page ? (e: React.MouseEvent) => {
       e.preventDefault();
@@ -65,12 +99,12 @@ export default function App() {
 
   const utilityItems = isLoggedIn
     ? [
-        ...(isAdmin ? [] : [{ label: "마이페이지", href: "#", icon: <MyPageIcon />, onClick: () => navigateTo("mypage") }]),
+        ...(isAdmin ? [] : [{ label: "마이페이지", href: "#/mypage", icon: <MyPageIcon />, onClick: () => navigateTo("mypage") }]),
         { label: "로그아웃", href: "#", icon: <LogoutIcon />, onClick: handleLogout },
       ]
     : [
-        { label: "회원가입", href: "#", icon: <PersonIcon />, onClick: () => setPage("signup") },
-        { label: "로그인",   href: "#", icon: <LoginIcon />,  onClick: () => setPage("login") },
+        { label: "회원가입", href: "#/signup", icon: <PersonIcon />, onClick: () => setPage("signup") },
+        { label: "로그인",   href: "#/login",  icon: <LoginIcon />,  onClick: () => setPage("login") },
       ];
 
   const sharedHeader = (

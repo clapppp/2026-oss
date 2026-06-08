@@ -10,6 +10,7 @@ interface FormFieldProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   options?: string[];
+  inlineError?: string;
 }
 
 export default function FormField({
@@ -19,10 +20,14 @@ export default function FormField({
   value,
   onChange,
   options = [],
+  inlineError,
 }: FormFieldProps) {
   return (
     <div className={styles.wrapper}>
-      <label className={styles.label}>{label}</label>
+      <label className={styles.label}>
+        {label}
+        {inlineError && <span className={styles.inlineError}>⚠ {inlineError}</span>}
+      </label>
       {type === "select" ? (
         <div className={styles.selectWrapper}>
           <select

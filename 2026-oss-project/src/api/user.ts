@@ -18,6 +18,13 @@ export async function changePassword(currentPassword: string, newPassword: strin
   });
 }
 
+export async function verifyUser(email: string, phone: string): Promise<void> {
+  await request("/api/auth/verify-user", {
+    method: "POST",
+    body: JSON.stringify({ email, phone }),
+  });
+}
+
 export async function resetPassword(email: string, phone: string, newPassword: string): Promise<void> {
   await request("/api/auth/reset-password", {
     method: "POST",
