@@ -46,10 +46,10 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }: Log
         {/* 헤더 */}
         <div className={styles.cardHeader}>
           <div className={styles.logoMark} aria-hidden="true">
-            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" width={28} height={28}>
-              <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" />
-              <path d="M4 10l12 6 12-6" />
-              <line x1="16" y1="16" x2="16" y2="28" />
+            <svg viewBox="0 0 36 36" fill="none" width={36} height={36}>
+              <rect width="36" height="36" rx="8" fill="#6D28D9"/>
+              <path d="M10 28 L18 8 L26 28" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M13 22 Q18 18.5 23 22" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
           </div>
           <h1 className={styles.title}>로그인</h1>

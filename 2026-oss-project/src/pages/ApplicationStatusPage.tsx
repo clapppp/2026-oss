@@ -126,6 +126,12 @@ function StatusBanner({ app }: { app: Application }) {
           총 {app.entries.length}건 중 <strong>{rejectedCount}건이 반려</strong>되었습니다.
           아래 항목별 반려 사유를 확인하고 재신청해 주세요.
         </p>
+        {app.reason && (
+          <div className={styles.bannerReason}>
+            <span className={styles.bannerReasonLabel}>심사관 사유</span>
+            <span className={styles.bannerReasonText}>{app.reason}</span>
+          </div>
+        )}
       </div>
     </div>
   );
