@@ -9,17 +9,17 @@ const THEATER_ROLE_MIN: Record<string, { min: number; unit: string }> = {
   "비평":                { min: 3, unit: "편" },
 };
 
-// ── 문학: 세부장르(+단편 구분)별 최소 편수 ────────────────────────────────────
-// key: "genre" 또는 "genre:단편" 형태
+// ── 문학: 세부장르별 최소 편수 ────────────────────────────────────────────────
 const LIT_GENRE_MIN: Record<string, { min: number; unit: string; label: string }> = {
-  "시/시조":              { min: 5, unit: "편", label: "시/시조" },
-  "수필":                 { min: 5, unit: "편", label: "수필" },
-  "소설:장편":            { min: 1, unit: "편", label: "소설(장편/기타)" },
-  "소설:단편":            { min: 3, unit: "편", label: "소설(단편)" },
-  "평전":                 { min: 1, unit: "편", label: "평전" },
-  "희곡":                 { min: 1, unit: "편", label: "희곡" },
-  "평론":                 { min: 3, unit: "편", label: "평론" },
-  "문학작품집":           { min: 1, unit: "권", label: "문학작품집" },
+  "시/시조":           { min: 5, unit: "편", label: "시/시조" },
+  "수필":              { min: 5, unit: "편", label: "수필" },
+  "소설 (단편)":       { min: 3, unit: "편", label: "소설(단편)" },
+  "소설 (장편·기타)":  { min: 1, unit: "편", label: "소설(장편·기타)" },
+  "동화/청소년소설":   { min: 1, unit: "편", label: "동화/청소년소설" },
+  "평전":              { min: 1, unit: "편", label: "평전" },
+  "희곡":              { min: 1, unit: "편", label: "희곡" },
+  "평론":              { min: 3, unit: "편", label: "평론" },
+  "문학작품집":        { min: 1, unit: "권", label: "문학작품집" },
 };
 
 /** 비율 합계 방식: 각 그룹의 (실제 수 / 최소 수) 합이 1 이상이면 통과 */
@@ -37,7 +37,6 @@ function validateTheater(entries: Record<string, string>[]): string | null {
     return "[연극] 실적을 1편 이상 입력해 주세요.";
   }
 
-  // 역할별 개수 집계
   const roleCounts: Record<string, number> = {};
   for (const e of entries) {
     if (e.role) roleCounts[e.role] = (roleCounts[e.role] ?? 0) + 1;
@@ -49,7 +48,6 @@ function validateTheater(entries: Record<string, string>[]): string | null {
   const ratio = ratioSum(roleCounts, minMap);
 
   if (ratio < 1) {
-    // 각 역할별 현황 문자열 생성
     const detail = Object.entries(roleCounts)
       .map(([role, cnt]) => {
         const min = THEATER_ROLE_MIN[role]?.min;
@@ -68,18 +66,9 @@ function validateLiterature(entries: Record<string, string>[]): string | null {
     return "[문학] 실적을 1편 이상 입력해 주세요.";
   }
 
-  // 세부장르+단편구분별 개수 집계
   const counts: Record<string, number> = {};
   for (const e of entries) {
-    if (!e.genre) continue;
-
-    let key: string;
-    if (e.genre === "소설/동화/청소년소설") {
-      key = e.character === "단편" ? "소설:단편" : "소설:장편";
-    } else {
-      key = e.genre;
-    }
-    counts[key] = (counts[key] ?? 0) + 1;
+    if (e.genre) counts[e.genre] = (counts[e.genre] ?? 0) + 1;
   }
 
   const minMap = Object.fromEntries(
@@ -121,7 +110,7 @@ export function validateApplicationStep2(
       const err = validateLiterature(entries);
       if (err) return err;
     } else {
-      // 만화 연재 특례: 연재 실적이 1개 이상이면 편수 요건 충족
+      // 만화 연재 특례
       const isManhwaSerial = cat === "만화" && entries.some((e) => e.method === "연재");
       if (!isManhwaSerial && entries.length < meta.minCount) {
         return `[${cat}] 실적을 ${meta.minCount}${meta.unit} 이상 입력해 주세요. (현재 ${entries.length}${meta.unit})`;
@@ -138,16 +127,20 @@ export function validateApplicationStep2(
           entries[i].method !== "연재"
         ) continue;
 
-        if (!entries[i][field.key]?.trim()) {
-          return `[${cat}] 실적 ${i + 1}의 "${field.label}" 항목을 입력해 주세요.`;
+        // optional 필드는 빈 값 허용
+        if (field.optional) {
+          // ISBN: 입력된 경우에만 형식 검사
+          if (field.key === "isbn" && entries[i]["isbn"]?.trim()) {
+            const digits = entries[i]["isbn"].replace(/[^0-9]/g, "");
+            if (digits.length !== 13) {
+              return `[${cat}] 실적 ${i + 1}의 "ISBN"은 숫자 13자리여야 합니다. (현재 ${digits.length}자리)`;
+            }
+          }
+          continue;
         }
 
-        // ISBN 13자리 검사
-        if (field.key === "isbn") {
-          const digits = (entries[i]["isbn"] ?? "").replace(/[^0-9]/g, "");
-          if (digits.length !== 13) {
-            return `[${cat}] 실적 ${i + 1}의 "ISBN"은 숫자 13자리여야 합니다. (현재 ${digits.length}자리)`;
-          }
+        if (!entries[i][field.key]?.trim()) {
+          return `[${cat}] 실적 ${i + 1}의 "${field.label}" 항목을 입력해 주세요.`;
         }
       }
     }

@@ -4,6 +4,8 @@ export interface FieldConfig {
   type: "text" | "date" | "select";
   placeholder?: string;
   options?: string[];
+  /** true면 빈 값이어도 필수 검사 통과 */
+  optional?: boolean;
 }
 
 export interface CategoryMeta {
@@ -13,7 +15,7 @@ export interface CategoryMeta {
 }
 
 export const CATEGORY_META: Record<string, CategoryMeta> = {
-  "문학":         { minCount: 1, unit: "편", hint: "시/시조·수필 5편, 평론 3편, 단편소설 3편, 소설(장편)·희곡·평전·문학작품집 1편 이상 (장르별 기준)" },
+  "문학":         { minCount: 1, unit: "편", hint: "시/시조·수필 5편 | 평론·소설(단편) 3편 | 소설(장편)·동화·희곡·평전·문학작품집 1편 이상 (장르별 비율 합산)" },
   "디자인 / 공예":{ minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
   "일반미술":     { minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
   "전통미술":     { minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
@@ -22,7 +24,7 @@ export const CATEGORY_META: Record<string, CategoryMeta> = {
   "만화":         { minCount: 5, unit: "편", hint: "작품 발표 5편 이상 (연재의 경우 6개월 이상 1편)" },
   "방송":         { minCount: 3, unit: "편", hint: "드라마·예능·교양 프로그램 출연 3편 이상" },
   "공연":         { minCount: 3, unit: "편", hint: "공연 출연 3편 이상" },
-  "연극":         { minCount: 1, unit: "편", hint: "출연 3편, 연출·희곡집필 1편, 비평 3편 이상 (역할별 기준)" },
+  "연극":         { minCount: 1, unit: "편", hint: "출연·비평 3편 | 연출·희곡집필 1편 이상 (역할별 비율 합산)" },
   "무용":         { minCount: 3, unit: "편", hint: "무용 공연 출연 3편 이상" },
   "영화":         { minCount: 3, unit: "편", hint: "상영영화 출연 3편 이상" },
   "국악":         { minCount: 3, unit: "편", hint: "공연 출연 또는 악곡 발표 3편 이상" },
@@ -33,17 +35,17 @@ export const CATEGORY_META: Record<string, CategoryMeta> = {
 export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   "문학": [
     { key: "title", label: "작품명", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "publisher", label: "발행처 (문예지명)", type: "text", placeholder: "내용을 입력하세요" },
     {
       key: "genre", label: "세부장르", type: "select",
-      options: ["시/시조", "수필", "소설/동화/청소년소설", "평전", "희곡", "평론", "문학작품집"],
+      options: [
+        "시/시조", "수필",
+        "소설 (단편)", "소설 (장편·기타)", "동화/청소년소설",
+        "평전", "희곡", "평론", "문학작품집",
+      ],
     },
+    { key: "publisher", label: "발행처 / 문예지명", type: "text", placeholder: "내용을 입력하세요" },
     { key: "publishDate", label: "발행일", type: "date", placeholder: "YYYY.MM.DD" },
-    { key: "isbn", label: "ISBN", type: "text", placeholder: "예) 979-11-XXXXXXX-X" },
-    {
-      key: "character", label: "성격", type: "select",
-      options: ["단편", "장편", "기타"],
-    },
+    { key: "isbn", label: "ISBN (출판 작품)", type: "text", placeholder: "예) 979-11-XXXXXXX-X", optional: true },
   ],
 
   "디자인 / 공예": [
@@ -146,14 +148,18 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
   ],
 
   "연극": [
-    { key: "title", label: "공연명", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "venue", label: "공연장", type: "text", placeholder: "내용을 입력하세요" },
-    { key: "performanceStartDate", label: "공연 시작일", type: "date", placeholder: "YYYY.MM.DD" },
-    { key: "performanceEndDate",   label: "공연 종료일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "title", label: "공연명 / 작품명", type: "text", placeholder: "내용을 입력하세요" },
+    {
+      key: "genre", label: "세부장르", type: "select",
+      options: ["정극", "뮤지컬", "오페라", "마당극", "낭독극", "인형극", "기타"],
+    },
     {
       key: "role", label: "역할", type: "select",
       options: ["출연", "연출", "희곡집필 (공연 통해)", "희곡집필 (잡지 등)", "비평"],
     },
+    { key: "venue", label: "공연장", type: "text", placeholder: "내용을 입력하세요" },
+    { key: "performanceStartDate", label: "공연 시작일", type: "date", placeholder: "YYYY.MM.DD" },
+    { key: "performanceEndDate",   label: "공연 종료일", type: "date", placeholder: "YYYY.MM.DD" },
   ],
 
   "무용": [
