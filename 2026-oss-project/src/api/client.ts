@@ -58,7 +58,14 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      throw new ApiError(res.status, body || res.statusText);
+      let message = res.statusText;
+      try {
+        const parsed = JSON.parse(body);
+        message = parsed.detail ?? parsed.message ?? body;
+      } catch {
+        message = body || res.statusText;
+      }
+      throw new ApiError(res.status, message);
     }
 
     if (res.status === 204) return undefined as T;
