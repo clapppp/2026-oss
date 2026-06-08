@@ -269,6 +269,11 @@
   letter-spacing: 0.02em;
 }
 
+.detailPenName {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
 .closeBtn {
   width: 28px;
   height: 28px;

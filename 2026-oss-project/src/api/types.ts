@@ -94,6 +94,7 @@ export interface Application {
   reason?: string;
   entries: ApplicationEntry[];
   applicantName?: string;
+  applicantPenName?: string;
   aiFeedback?: AiFeedback;
 }
 

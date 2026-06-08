@@ -201,7 +201,7 @@ def user_schema(u: dict) -> dict:
     }
 
 
-def app_schema(a: dict, applicant_name: str) -> dict:
+def app_schema(a: dict, applicant_name: str, applicant_pen_name: str = "") -> dict:
     entries = json.loads(a["entries_json"])
     # 파일 본문(base64)은 다운로드 전용 엔드포인트로 분리 — 목록 응답에서 제외
     for entry in entries:
@@ -219,7 +219,8 @@ def app_schema(a: dict, applicant_name: str) -> dict:
         "statusDate":    a["status_date"],
         "reason":        a["reason"],
         "entries":       entries,
-        "applicantName": applicant_name,
+        "applicantName":    applicant_name,
+        "applicantPenName": applicant_pen_name,
         "aiFeedback":    ai_feedback,
     }
 
@@ -386,6 +387,20 @@ async def upload_photo(photo: UploadFile = File(...), current_user: dict = Depen
     return ok({"url": url})
 
 
+@app.delete("/api/user/photo")
+def delete_photo(current_user: dict = Depends(get_current_user)):
+    # 파일 삭제
+    for ext in (".jpg", ".jpeg", ".png", ".gif", ".webp"):
+        filepath = os.path.join(PHOTOS_DIR, f"{current_user['id']}{ext}")
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    conn = get_db()
+    conn.execute("UPDATE users SET profile_image = '' WHERE id = ?", (current_user["id"],))
+    conn.commit()
+    conn.close()
+    return ok({})
+
+
 @app.patch("/api/auth/password")
 def change_password(body: ChangePasswordBody, current_user: dict = Depends(get_current_user)):
     if current_user["password_hash"] != hash_password(body.currentPassword):
@@ -407,19 +422,20 @@ def get_applications(current_user: dict = Depends(get_current_user)):
     conn = get_db()
     if current_user["role"] == "admin":
         rows = conn.execute(
-            "SELECT a.*, u.name as applicant_name FROM applications a JOIN users u ON a.user_id = u.id ORDER BY a.apply_date DESC"
+            "SELECT a.*, u.name as applicant_name, u.pen_name as applicant_pen_name FROM applications a JOIN users u ON a.user_id = u.id ORDER BY a.apply_date DESC"
         ).fetchall()
         result = []
         for r in rows:
             r = dict(r)
             name = r.pop("applicant_name")
-            result.append(app_schema(r, name))
+            pen_name = r.pop("applicant_pen_name", "") or ""
+            result.append(app_schema(r, name, pen_name))
     else:
         rows = conn.execute(
             "SELECT * FROM applications WHERE user_id = ? ORDER BY apply_date DESC",
             (current_user["id"],),
         ).fetchall()
-        result = [app_schema(dict(r), current_user["name"]) for r in rows]
+        result = [app_schema(dict(r), current_user["name"], current_user.get("pen_name", "") or "") for r in rows]
     conn.close()
 
     return ok(result)

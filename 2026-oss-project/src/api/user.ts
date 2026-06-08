@@ -31,3 +31,8 @@ export async function uploadPhoto(file: File): Promise<string> {
   form.append("photo", file);
   return request<{ url: string }>("/api/user/photo", { method: "POST", body: form }).then((r) => r.url);
 }
+
+export async function deletePhoto(): Promise<void> {
+  if (USE_MOCK) return;
+  await request("/api/user/photo", { method: "DELETE" });
+}

@@ -485,6 +485,9 @@ function DetailPanel({ app, onClose, onReapply }: { app: Application; onClose: (
             ))}
           </p>
           <span className={styles.detailApplyNo}>접수번호 {app.applyNo}</span>
+          {app.applicantPenName && (
+            <span className={styles.detailPenName}>필명 {app.applicantPenName}</span>
+          )}
         </div>
         <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="닫기">
           <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={16} height={16}>

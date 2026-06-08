@@ -3,7 +3,7 @@ import Button from "../components/common/Button";
 import Toast from "../components/common/Toast";
 import styles from "./MyPage.module.css";
 import { useAuth } from "../context/AuthContext";
-import { changePassword, uploadPhoto } from "../api/user";
+import { changePassword, uploadPhoto, deletePhoto } from "../api/user";
 import Input from "../components/common/Input";
 import { EyeIcon } from "../components/common/icons";
 import { formatPhone, formatGender } from "../utils/formatters";
@@ -80,6 +80,17 @@ export default function MyPage({ onBack }: MyPageProps) {
     }
   };
 
+  const handlePhotoDelete = async () => {
+    try {
+      await deletePhoto();
+      setPhotoUrl(null);
+      updateUser({ profileImage: "" });
+      showToast("프로필 사진이 삭제되었습니다.");
+    } catch {
+      showToast("사진 삭제에 실패했습니다.");
+    }
+  };
+
   return (
     <div className={styles.page}>
       <Toast message={toast.message} visible={toast.visible} />
@@ -132,6 +143,11 @@ export default function MyPage({ onBack }: MyPageProps) {
             <span className={styles.profileName}>{user?.name}</span>
             <span className={styles.profileEmail}>{email}</span>
             <span className={styles.photoHint}>사진을 클릭하여 변경</span>
+            {photoUrl && (
+              <button type="button" className={styles.photoDeleteBtn} onClick={handlePhotoDelete}>
+                사진 삭제
+              </button>
+            )}
           </div>
         </div>
 
