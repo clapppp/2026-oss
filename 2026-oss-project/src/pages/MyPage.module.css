@@ -402,65 +402,6 @@
   margin-top: 28px;
 }
 
-/* ── 비밀번호 변경 2단계 ─────────────────── */
-.pwChangeStartBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-family: inherit;
-  font-weight: 600;
-  color: var(--krds-primary, #1756BD);
-  background: var(--krds-primary-light, #EBF2FF);
-  border: 1px solid #c7d9f5;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
-}
-
-.pwChangeStartBtn:hover {
-  background: #d4e4fb;
-  border-color: #1756BD;
-}
-
-.pwStepBox {
-  border: 1px solid var(--krds-border, #ced4da);
-  border-radius: 8px;
-  padding: 20px;
-  background: var(--krds-bg-subtle, #f8f9fa);
-}
-
-.pwStepLabel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--krds-text-1, #212529);
-  margin: 0 0 18px;
-}
-
-.pwStepBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 9px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--krds-primary, #1756BD);
-  border-radius: 20px;
-  letter-spacing: 0.03em;
-}
-
-.pwStepActions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-
 /* ── 반응형 ──────────────────────────────── */
 @media (max-width: 640px) {
   .page {
