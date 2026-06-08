@@ -2,27 +2,37 @@ import { CATEGORY_FORM_CONFIG, CATEGORY_META } from "../constants/categoryFormCo
 
 // ── 연극: 역할별 최소 편수 ─────────────────────────────────────────────────────
 const THEATER_ROLE_MIN: Record<string, { min: number; unit: string }> = {
-  "출연":               { min: 3, unit: "편" },
-  "연출":               { min: 1, unit: "회" },
+  "출연":                { min: 3, unit: "편" },
+  "연출":                { min: 1, unit: "회" },
   "희곡집필 (공연 통해)": { min: 1, unit: "편" },
-  "희곡집필 (잡지 등)":  { min: 1, unit: "편" },
-  "비평":               { min: 3, unit: "편" },
+  "희곡집필 (잡지 등)":   { min: 1, unit: "편" },
+  "비평":                { min: 3, unit: "편" },
 };
 
-// ── 문학: 세부장르별 최소 편수 ────────────────────────────────────────────────
-const LIT_GENRE_MIN: Record<string, { min: number; unit: string }> = {
-  "시/시조":               { min: 5, unit: "편" },
-  "수필":                  { min: 5, unit: "편" },
-  "소설/동화/청소년소설":  { min: 1, unit: "편" }, // 단편은 별도 3편 규칙 적용
-  "평전":                  { min: 1, unit: "편" },
-  "희곡":                  { min: 1, unit: "편" },
-  "평론":                  { min: 3, unit: "편" },
-  "문학작품집":            { min: 1, unit: "권" },
+// ── 문학: 세부장르(+단편 구분)별 최소 편수 ────────────────────────────────────
+// key: "genre" 또는 "genre:단편" 형태
+const LIT_GENRE_MIN: Record<string, { min: number; unit: string; label: string }> = {
+  "시/시조":              { min: 5, unit: "편", label: "시/시조" },
+  "수필":                 { min: 5, unit: "편", label: "수필" },
+  "소설:장편":            { min: 1, unit: "편", label: "소설(장편/기타)" },
+  "소설:단편":            { min: 3, unit: "편", label: "소설(단편)" },
+  "평전":                 { min: 1, unit: "편", label: "평전" },
+  "희곡":                 { min: 1, unit: "편", label: "희곡" },
+  "평론":                 { min: 3, unit: "편", label: "평론" },
+  "문학작품집":           { min: 1, unit: "권", label: "문학작품집" },
 };
 
-function validateTheater(
-  entries: Record<string, string>[],
-): string | null {
+/** 비율 합계 방식: 각 그룹의 (실제 수 / 최소 수) 합이 1 이상이면 통과 */
+function ratioSum(counts: Record<string, number>, minMap: Record<string, number>): number {
+  let total = 0;
+  for (const [key, count] of Object.entries(counts)) {
+    const min = minMap[key];
+    if (min) total += count / min;
+  }
+  return total;
+}
+
+function validateTheater(entries: Record<string, string>[]): string | null {
   if (entries.length === 0 || entries.every((e) => !e.role)) {
     return "[연극] 실적을 1편 이상 입력해 주세요.";
   }
@@ -33,54 +43,59 @@ function validateTheater(
     if (e.role) roleCounts[e.role] = (roleCounts[e.role] ?? 0) + 1;
   }
 
-  for (const [role, count] of Object.entries(roleCounts)) {
-    const cfg = THEATER_ROLE_MIN[role];
-    if (!cfg) continue;
-    if (count < cfg.min) {
-      return `[연극] "${role}" 실적을 ${cfg.min}${cfg.unit} 이상 입력해 주세요. (현재 ${count}${cfg.unit})`;
-    }
+  const minMap = Object.fromEntries(
+    Object.entries(THEATER_ROLE_MIN).map(([k, v]) => [k, v.min]),
+  );
+  const ratio = ratioSum(roleCounts, minMap);
+
+  if (ratio < 1) {
+    // 각 역할별 현황 문자열 생성
+    const detail = Object.entries(roleCounts)
+      .map(([role, cnt]) => {
+        const min = THEATER_ROLE_MIN[role]?.min;
+        return min ? `${role} ${cnt}/${min}` : null;
+      })
+      .filter(Boolean)
+      .join(", ");
+    return `[연극] 실적이 부족합니다. (비율 합계 ${ratio.toFixed(2)} / 1.00 필요 — ${detail})`;
   }
 
   return null;
 }
 
-function validateLiterature(
-  entries: Record<string, string>[],
-): string | null {
+function validateLiterature(entries: Record<string, string>[]): string | null {
   if (entries.length === 0 || entries.every((e) => !e.genre)) {
     return "[문학] 실적을 1편 이상 입력해 주세요.";
   }
 
-  // 세부장르별 전체 수 + 단편 수 집계
-  const genreCounts: Record<string, { total: number; short: number }> = {};
+  // 세부장르+단편구분별 개수 집계
+  const counts: Record<string, number> = {};
   for (const e of entries) {
     if (!e.genre) continue;
-    if (!genreCounts[e.genre]) genreCounts[e.genre] = { total: 0, short: 0 };
-    genreCounts[e.genre].total++;
-    if (e.character === "단편") genreCounts[e.genre].short++;
+
+    let key: string;
+    if (e.genre === "소설/동화/청소년소설") {
+      key = e.character === "단편" ? "소설:단편" : "소설:장편";
+    } else {
+      key = e.genre;
+    }
+    counts[key] = (counts[key] ?? 0) + 1;
   }
 
-  for (const [genre, counts] of Object.entries(genreCounts)) {
-    const cfg = LIT_GENRE_MIN[genre];
-    if (!cfg) continue;
+  const minMap = Object.fromEntries(
+    Object.entries(LIT_GENRE_MIN).map(([k, v]) => [k, v.min]),
+  );
+  const ratio = ratioSum(counts, minMap);
 
-    if (genre === "소설/동화/청소년소설") {
-      const longCount = counts.total - counts.short; // 장편/기타
-      // 단편만 있을 때: 3편 이상 필요
-      if (longCount === 0 && counts.short < 3) {
-        return `[문학] "소설(단편)" 실적을 3편 이상 입력해 주세요. (현재 ${counts.short}편)`;
-      }
-      // 단편·장편 혼재: 단편이 있다면 그 단편도 3편 이상이어야 함
-      if (longCount > 0 && counts.short > 0 && counts.short < 3) {
-        return `[문학] "소설(단편)" 실적을 3편 이상 입력해 주세요. (현재 ${counts.short}편)`;
-      }
-      // 장편/기타만 있거나, 단편 기준 충족 → 통과
-      continue;
-    }
-
-    if (counts.total < cfg.min) {
-      return `[문학] "${genre}" 실적을 ${cfg.min}${cfg.unit} 이상 입력해 주세요. (현재 ${counts.total}${cfg.unit})`;
-    }
+  if (ratio < 1) {
+    const detail = Object.entries(counts)
+      .map(([key, cnt]) => {
+        const cfg = LIT_GENRE_MIN[key];
+        return cfg ? `${cfg.label} ${cnt}/${cfg.min}` : null;
+      })
+      .filter(Boolean)
+      .join(", ");
+    return `[문학] 실적이 부족합니다. (비율 합계 ${ratio.toFixed(2)} / 1.00 필요 — ${detail})`;
   }
 
   return null;
