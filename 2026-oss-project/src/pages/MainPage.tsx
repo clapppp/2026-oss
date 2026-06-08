@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import styles from "./MainPage.module.css";
 
 interface MainPageProps {
@@ -61,6 +62,99 @@ const STATS = [
   { num: "14일", label: "평균 심사 기간" },
   { num: "3개", label: "동시 신청 가능 분야" },
 ];
+
+// ── GitHub 기여자 타입 ──────────────────────────────────────────
+interface Contributor {
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  contributions: number;
+}
+
+// ── 개발팀 크레딧 섹션 ─────────────────────────────────────────
+function DevCredits() {
+  const [contributors, setContributors] = useState<Contributor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("https://api.github.com/repos/clapppp/2026-oss/contributors")
+      .then((r) => r.json())
+      .then((data: Contributor[]) => {
+        // bot 계정 제외
+        setContributors(data.filter((c) => !c.login.includes("[bot]")));
+      })
+      .catch(() => setContributors([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <section className={styles.credits}>
+      <div className={styles.sectionInner}>
+        <div className={styles.creditsHeader}>
+          <span className={styles.creditsEyebrow}>Made with ♥</span>
+          <h2 className={styles.sectionTitle}>개발팀</h2>
+          <p className={styles.sectionDesc}>공개SW프로젝트 1분반 6조가 함께 만들었습니다.</p>
+        </div>
+
+        {loading ? (
+          <div className={styles.creditsLoading}>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className={styles.creditsSkeleton} />
+            ))}
+          </div>
+        ) : contributors.length === 0 ? (
+          <p className={styles.creditsEmpty}>기여자 정보를 불러올 수 없습니다.</p>
+        ) : (
+          <ul className={styles.creditsGrid} role="list">
+            {contributors.map((c) => (
+              <li key={c.login}>
+                <a
+                  href={c.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.creditCard}
+                  aria-label={`${c.login}의 GitHub 프로필`}
+                >
+                  <img
+                    src={`${c.avatar_url}&s=120`}
+                    alt={c.login}
+                    className={styles.creditAvatar}
+                    loading="lazy"
+                  />
+                  <span className={styles.creditLogin}>{c.login}</span>
+                  <span className={styles.creditContrib}>{c.contributions} commits</span>
+                  <span className={styles.creditGhIcon} aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width={14} height={14}>
+                      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.745 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z" />
+                    </svg>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className={styles.creditsRepo}>
+          <a
+            href="https://github.com/clapppp/2026-oss"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.creditsRepoLink}
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" width={16} height={16} aria-hidden="true">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.745 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z" />
+            </svg>
+            clapppp/2026-oss 오픈소스 보러가기
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" width={12} height={12} aria-hidden="true">
+              <polyline points="9 3 13 3 13 7" /><line x1="13" y1="3" x2="7" y2="9" />
+              <path d="M6 4H4a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-2" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function MainPage({ onApply, onStatus, onGuide }: MainPageProps) {
   const handleQuickLink = (action: "apply" | "status" | "guide") => {
@@ -220,7 +314,7 @@ export default function MainPage({ onApply, onStatus, onGuide }: MainPageProps) 
       </section>
 
       {/* ── 신청 자격 ── */}
-      <section className={styles.bottom}>
+      <section className={styles.bottom} id="eligibility">
         <div className={styles.sectionInner}>
           <div className={styles.eligibilityBox}>
             <div className={styles.eligibilityHeader}>
@@ -262,6 +356,9 @@ export default function MainPage({ onApply, onStatus, onGuide }: MainPageProps) 
           </div>
         </div>
       </section>
+
+      {/* ── 개발팀 크레딧 ── */}
+      <DevCredits />
 
     </div>
   );

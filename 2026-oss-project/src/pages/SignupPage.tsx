@@ -10,6 +10,7 @@ import {
   MIN_PASSWORD_LENGTH,
   PHONE_DIGITS,
   BIRTH_DIGITS,
+  getPasswordError,
 } from "../constants/rules";
 
 interface SignupPageProps {
@@ -113,7 +114,7 @@ function InfoStep({
   const [showPw, setShowPw] = useState(false);
 
   const pwMismatch = pwConfirm.length > 0 && pw !== pwConfirm;
-  const pwWeak = pw.length > 0 && pw.length < MIN_PASSWORD_LENGTH;
+  const pwError = pw.length > 0 ? getPasswordError(pw) : null;
   const emailInvalid = email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const canSubmit =
@@ -123,7 +124,7 @@ function InfoStep({
     phone.replace(/\D/g, "").length === PHONE_DIGITS &&
     email.length > 0 &&
     !emailInvalid &&
-    pw.length >= MIN_PASSWORD_LENGTH &&
+    getPasswordError(pw) === null &&
     pw === pwConfirm;
 
   return (
@@ -207,8 +208,8 @@ function InfoStep({
           <div className={styles.inputWithIcon}>
             <Input
               type={showPw ? "text" : "password"}
-              error={pwWeak}
-              placeholder="영문, 숫자 포함 8자 이상"
+              error={!!pwError}
+              placeholder={`영문·숫자·특수문자 포함 ${MIN_PASSWORD_LENGTH}자 이상`}
               value={pw}
               onChange={(e) => setPw(e.target.value)}
               style={{ paddingRight: 44 }}
@@ -217,7 +218,7 @@ function InfoStep({
               <EyeIcon visible={showPw} />
             </button>
           </div>
-          {pwWeak && <p className={styles.fieldError}>비밀번호는 8자 이상이어야 합니다.</p>}
+          {pwError && <p className={styles.fieldError}>{pwError}</p>}
         </div>
 
         <div className={styles.field}>

@@ -3,7 +3,7 @@ import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import { EyeIcon } from "../components/common/icons";
 import { formatPhone } from "../utils/formatters";
-import { MIN_PASSWORD_LENGTH, PHONE_DIGITS } from "../constants/rules";
+import { MIN_PASSWORD_LENGTH, PHONE_DIGITS, getPasswordError } from "../constants/rules";
 import { resetPassword } from "../api/user";
 import styles from "./ForgotPasswordPage.module.css";
 
@@ -114,9 +114,9 @@ function ResetStep({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const pwWeak = pw.length > 0 && pw.length < MIN_PASSWORD_LENGTH;
+  const pwError = pw.length > 0 ? getPasswordError(pw) : null;
   const pwMismatch = pwConfirm.length > 0 && pw !== pwConfirm;
-  const canSubmit = pw.length >= MIN_PASSWORD_LENGTH && pw === pwConfirm;
+  const canSubmit = getPasswordError(pw) === null && pw === pwConfirm;
 
   const handleReset = async () => {
     setError("");
@@ -134,7 +134,7 @@ function ResetStep({
   return (
     <div className={styles.stepContent}>
       <p className={styles.stepDesc}>
-        새로 사용할 비밀번호를 입력하세요. 영문과 숫자를 포함하여 8자 이상으로
+        새로 사용할 비밀번호를 입력하세요. 영문·숫자·특수문자를 포함하여 {MIN_PASSWORD_LENGTH}자 이상으로
         설정해 주세요.
       </p>
 
@@ -146,8 +146,8 @@ function ResetStep({
           <div className={styles.inputWithIcon}>
             <Input
               type={showPw ? "text" : "password"}
-              error={pwWeak}
-              placeholder="영문, 숫자 포함 8자 이상"
+              error={!!pwError}
+              placeholder={`영문·숫자·특수문자 포함 ${MIN_PASSWORD_LENGTH}자 이상`}
               value={pw}
               onChange={(e) => setPw(e.target.value)}
               style={{ paddingRight: 44 }}
@@ -161,9 +161,7 @@ function ResetStep({
               <EyeIcon visible={showPw} />
             </button>
           </div>
-          {pwWeak && (
-            <p className={styles.fieldError}>비밀번호는 8자 이상이어야 합니다.</p>
-          )}
+          {pwError && <p className={styles.fieldError}>{pwError}</p>}
         </div>
 
         <div className={styles.field}>

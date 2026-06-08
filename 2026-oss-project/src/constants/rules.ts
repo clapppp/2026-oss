@@ -3,7 +3,24 @@ export const MAX_CATEGORIES = 3;
 export const INITIAL_APPLICATION_STATUS = "심사중" as const;
 
 // ── 계정 / 인증 ────────────────────────────────
-export const MIN_PASSWORD_LENGTH = 8;
+export const MIN_PASSWORD_LENGTH = 10;
+
+/**
+ * 비밀번호 복잡도 검사.
+ * 통과하면 null, 실패하면 사용자에게 보여줄 에러 문자열 반환.
+ * 조건: 10자 이상 + 영문 + 숫자 + 특수문자
+ */
+export function getPasswordError(pw: string): string | null {
+  if (pw.length < MIN_PASSWORD_LENGTH)
+    return `비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`;
+  if (!/[a-zA-Z]/.test(pw))
+    return "영문자(대소문자)를 포함해야 합니다.";
+  if (!/[0-9]/.test(pw))
+    return "숫자를 포함해야 합니다.";
+  if (!/[!@#$%^&*()\-_=+[\]{};:'",.<>/?\\|`~]/.test(pw))
+    return "특수문자를 포함해야 합니다.";
+  return null;
+}
 export const PHONE_DIGITS = 11;
 export const BIRTH_DIGITS = 8;
 export const AUTH_CODE_DIGITS = 6;

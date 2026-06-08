@@ -6,6 +6,7 @@ import datetime
 import os
 import logging
 import asyncio
+import re
 from typing import Optional
 
 logging.basicConfig(
@@ -110,6 +111,19 @@ os.makedirs(PHOTOS_DIR, exist_ok=True)
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
+
+
+def validate_password_strength(pw: str) -> str | None:
+    """10자 이상 + 영문 + 숫자 + 특수문자 검사. 통과하면 None, 실패하면 에러 메시지."""
+    if len(pw) < 10:
+        return "비밀번호는 10자 이상이어야 합니다"
+    if not re.search(r'[a-zA-Z]', pw):
+        return "비밀번호에 영문자를 포함해야 합니다"
+    if not re.search(r'[0-9]', pw):
+        return "비밀번호에 숫자를 포함해야 합니다"
+    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|`~]', pw):
+        return "비밀번호에 특수문자를 포함해야 합니다"
+    return None
 
 
 def create_token(user_id: str) -> str:
@@ -298,6 +312,10 @@ def reset_password(body: ResetPasswordBody):
     if stored_phone != input_phone:
         raise HTTPException(status_code=400, detail="이메일 또는 휴대폰 번호가 일치하지 않습니다")
 
+    pw_err = validate_password_strength(body.new_password)
+    if pw_err:
+        raise HTTPException(status_code=400, detail=pw_err)
+
     conn = get_db()
     conn.execute(
         "UPDATE users SET password_hash = ? WHERE email = ?",
@@ -310,6 +328,10 @@ def reset_password(body: ResetPasswordBody):
 
 @app.post("/api/auth/signup")
 def signup(body: SignupBody):
+    pw_err = validate_password_strength(body.password)
+    if pw_err:
+        raise HTTPException(status_code=400, detail=pw_err)
+
     conn = get_db()
     existing = conn.execute("SELECT id FROM users WHERE email = ?", (body.email,)).fetchone()
     if existing:
@@ -405,6 +427,9 @@ def delete_photo(current_user: dict = Depends(get_current_user)):
 def change_password(body: ChangePasswordBody, current_user: dict = Depends(get_current_user)):
     if current_user["password_hash"] != hash_password(body.currentPassword):
         raise HTTPException(status_code=400, detail="현재 비밀번호가 올바르지 않습니다")
+    pw_err = validate_password_strength(body.newPassword)
+    if pw_err:
+        raise HTTPException(status_code=400, detail=pw_err)
     conn = get_db()
     conn.execute(
         "UPDATE users SET password_hash = ? WHERE id = ?",
