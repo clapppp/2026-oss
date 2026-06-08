@@ -877,7 +877,7 @@
   text-decoration: none;
   color: var(--krds-text-1, #212529);
   width: 140px;
-  transition: box-shadow 0.18s, transform 0.18s, border-color 0.18s;
+  transition: box-shadow 0.18s, transform 0.18s, border-color 0.18s, background 0.18s;
   position: relative;
 }
 
@@ -885,6 +885,7 @@
   box-shadow: 0 8px 28px rgba(23, 86, 189, 0.12);
   transform: translateY(-3px);
   border-color: var(--krds-primary, #1756BD);
+  background: #f0f6ff;
 }
 
 .creditAvatar {
