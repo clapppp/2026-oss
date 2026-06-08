@@ -12,7 +12,10 @@ export function validateApplicationStep2(
     if (!fields || !meta) continue;
     const entries = categoryForms[cat] ?? [{}];
 
-    if (entries.length < meta.minCount) {
+    // 만화 연재 특례: 연재 실적이 1개 이상 있으면 편수 요건 충족
+    const isManhwaSerial =
+      cat === "만화" && entries.some((e) => e.method === "연재");
+    if (!isManhwaSerial && entries.length < meta.minCount) {
       return `[${cat}] 실적을 ${meta.minCount}${meta.unit} 이상 입력해 주세요. (현재 ${entries.length}${meta.unit})`;
     }
 
