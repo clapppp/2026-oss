@@ -5,6 +5,16 @@ import { getApplications } from "../api/application";
 import CategoryIcon from "../components/common/CategoryIcon";
 
 // ── 헬퍼 ──────────────────────────────────────────────────────
+/** "2025-01-15 14:30:25" → "2025.01.15 14:30:25" (시·분·초 포함) */
+function formatApplyDate(applyDate: string): string {
+  if (!applyDate) return "";
+  // ISO datetime "YYYY-MM-DDTHH:MM:SS" or "YYYY-MM-DD HH:MM:SS" → "YYYY.MM.DD HH:MM:SS"
+  const normalized = applyDate.replace("T", " ");
+  const [datePart, timePart] = normalized.split(" ");
+  const formattedDate = datePart.replace(/-/g, ".");
+  return timePart ? `${formattedDate} ${timePart}` : formattedDate;
+}
+
 function getFieldType(app: Application) {
   return app.categories.length === 1 ? "단일 분야" : `복합 분야 ${app.categories.length}개`;
 }
@@ -516,8 +526,8 @@ function DetailPanel({ app, onClose, onReapply }: { app: Application; onClose: (
             </span>
             <span className={styles.infoSep} />
             <span>
-              <span className={styles.infoLabel}>유효기간</span>
-              {app.applyDate}
+              <span className={styles.infoLabel}>신청 일시</span>
+              {formatApplyDate(app.applyDate)}
             </span>
             <span className={styles.infoSep} />
             <span>
@@ -642,7 +652,7 @@ function ListItem({ app, active, onClick }: { app: Application; active: boolean;
           </span>
         ))}
       </div>
-      <div className={styles.itemMeta}>{app.applyDate} · {app.entries.length}점</div>
+      <div className={styles.itemMeta}>{formatApplyDate(app.applyDate)} · {app.entries.length}점</div>
       {rejectedCount > 0 && (
         <div className={styles.itemAlert}>
           <span className={styles.itemAlertDot} />

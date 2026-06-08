@@ -637,7 +637,7 @@ async def submit_application(
     prefix = CATEGORY_PREFIX.get(cat_names[0], "ART") if len(cat_names) == 1 else "MIX"
     suffix = secrets.token_hex(2).upper()  # 랜덤 4자리 16진수
     apply_no = f"{prefix}-{datetime.date.today().strftime('%Y%m%d')}-{suffix}"
-    now      = datetime.date.today().isoformat()
+    now      = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     conn = get_db()
     conn.execute(
