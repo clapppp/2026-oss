@@ -108,29 +108,41 @@ export default function MyPage({ onBack }: MyPageProps) {
 
         {/* 프로필 요약 + 사진 등록 */}
         <div className={styles.profileSection}>
-          <button
-            type="button"
-            className={styles.avatarBtn}
-            onClick={() => photoInputRef.current?.click()}
-            aria-label="프로필 사진 변경"
-          >
-            {photoUrl ? (
-              <img src={photoUrl} alt="프로필 사진" className={styles.avatarImg} />
-            ) : (
-              <svg viewBox="0 0 48 48" fill="none" width={48} height={48}>
-                <circle cx="24" cy="24" r="24" fill="#EDE9FE" />
-                <circle cx="24" cy="18" r="7" fill="#1756BD" opacity="0.8" />
-                <path d="M10 42c0-7.7 6.3-13 14-13s14 5.3 14 13" fill="#1756BD" opacity="0.5" />
-              </svg>
+          <div className={styles.avatarWrap}>
+            <button
+              type="button"
+              className={styles.avatarBtn}
+              onClick={() => photoInputRef.current?.click()}
+              aria-label="프로필 사진 변경"
+            >
+              {photoUrl ? (
+                <img src={photoUrl} alt="프로필 사진" className={styles.avatarImg} />
+              ) : (
+                <svg viewBox="0 0 48 48" fill="none" width={48} height={48}>
+                  <circle cx="24" cy="24" r="24" fill="#EDE9FE" />
+                  <circle cx="24" cy="18" r="7" fill="#1756BD" opacity="0.8" />
+                  <path d="M10 42c0-7.7 6.3-13 14-13s14 5.3 14 13" fill="#1756BD" opacity="0.5" />
+                </svg>
+              )}
+              <span className={styles.avatarOverlay} aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" width={16} height={16}>
+                  <rect x="2" y="5" width="16" height="12" rx="2" />
+                  <circle cx="10" cy="11" r="3" />
+                  <path d="M7 5l1.5-2h3L13 5" />
+                </svg>
+              </span>
+            </button>
+            {photoUrl && (
+              <button type="button" className={styles.photoDeleteBtn} onClick={handlePhotoDelete}>
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" width={11} height={11} aria-hidden="true">
+                  <polyline points="2 4 12 4" />
+                  <path d="M5 4V3h4v1" />
+                  <path d="M3 4l.7 8h6.6L11 4" />
+                </svg>
+                삭제
+              </button>
             )}
-            <span className={styles.avatarOverlay} aria-hidden="true">
-              <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" width={16} height={16}>
-                <rect x="2" y="5" width="16" height="12" rx="2" />
-                <circle cx="10" cy="11" r="3" />
-                <path d="M7 5l1.5-2h3L13 5" />
-              </svg>
-            </span>
-          </button>
+          </div>
           <input
             ref={photoInputRef}
             type="file"
@@ -143,11 +155,6 @@ export default function MyPage({ onBack }: MyPageProps) {
             <span className={styles.profileName}>{user?.name}</span>
             <span className={styles.profileEmail}>{email}</span>
             <span className={styles.photoHint}>사진을 클릭하여 변경</span>
-            {photoUrl && (
-              <button type="button" className={styles.photoDeleteBtn} onClick={handlePhotoDelete}>
-                사진 삭제
-              </button>
-            )}
           </div>
         </div>
 

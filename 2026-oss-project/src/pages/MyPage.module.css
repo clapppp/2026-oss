@@ -67,9 +67,16 @@
   border-bottom: 1px solid #C4B5FD;
 }
 
+.avatarWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .avatarBtn {
   position: relative;
-  flex-shrink: 0;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -136,13 +143,24 @@
 }
 
 .photoDeleteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   background: none;
-  border: none;
-  padding: 0;
+  border: 1px solid #fca5a5;
+  border-radius: 999px;
+  padding: 3px 9px;
   font-size: 11px;
+  font-weight: 500;
   color: #ef4444;
   cursor: pointer;
-  text-decoration: underline;
+  white-space: nowrap;
+  transition: background 0.13s, border-color 0.13s;
+}
+
+.photoDeleteBtn:hover {
+  background: #fff1f1;
+  border-color: #ef4444;
 }
 
 /* ── 본문 ────────────────────────────────── */
