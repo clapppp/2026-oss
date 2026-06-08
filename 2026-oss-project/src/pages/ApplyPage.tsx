@@ -266,17 +266,31 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                           )}
                         </div>
                         <div className="formGrid">
-                          {fields.map((field) => (
-                            <FormField
-                              key={field.key}
-                              label={field.label}
-                              type={field.type}
-                              placeholder={field.placeholder}
-                              options={field.options}
-                              value={entry[field.key] ?? ""}
-                              onChange={handleCategoryField(cat, idx, field.key)}
-                            />
-                          ))}
+                          {fields.map((field) => {
+                            const isbnDigits = field.key === "isbn"
+                              ? (entry["isbn"] ?? "").replace(/[^0-9]/g, "")
+                              : null;
+                            const isbnError = isbnDigits !== null
+                              && isbnDigits.length > 0
+                              && isbnDigits.length !== 13;
+                            return (
+                              <React.Fragment key={field.key}>
+                                <FormField
+                                  label={field.label}
+                                  type={field.type}
+                                  placeholder={field.placeholder}
+                                  options={field.options}
+                                  value={entry[field.key] ?? ""}
+                                  onChange={handleCategoryField(cat, idx, field.key)}
+                                />
+                                {isbnError && (
+                                  <p className="isbnError">
+                                    ISBN은 숫자 13자리여야 합니다. (현재 {isbnDigits!.length}자리)
+                                  </p>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
                         </div>
                         <div className="entryFiles">
                           <p className="entryFilesTitle">증빙자료 제출</p>

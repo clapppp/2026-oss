@@ -26,6 +26,13 @@ export function validateApplicationStep2(
         if (!entries[i][field.key]?.trim()) {
           return `[${cat}] 실적 ${i + 1}의 "${field.label}" 항목을 입력해 주세요.`;
         }
+        // ISBN 13자리 검사
+        if (field.key === "isbn") {
+          const digits = (entries[i]["isbn"] ?? "").replace(/[^0-9]/g, "");
+          if (digits.length !== 13) {
+            return `[${cat}] 실적 ${i + 1}의 "ISBN"은 숫자 13자리여야 합니다. (현재 ${digits.length}자리)`;
+          }
+        }
       }
     }
   }
