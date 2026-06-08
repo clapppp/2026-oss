@@ -260,6 +260,10 @@ class ReviewBody(BaseModel):
     reason: Optional[str] = None
 
 
+class VerifyUserBody(BaseModel):
+    email: str
+    phone: str
+
 class ResetPasswordBody(BaseModel):
     email: str
     phone: str
@@ -296,6 +300,21 @@ def login(body: LoginBody):
 
 @app.post("/api/auth/logout")
 def logout():
+    return ok(None)
+
+
+@app.post("/api/auth/verify-user")
+def verify_user(body: VerifyUserBody):
+    """비밀번호 찾기 Step 1: 이메일+휴대폰 일치 여부 확인"""
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE email = ?", (body.email,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=400, detail="이메일 또는 휴대폰 번호가 일치하지 않습니다")
+    stored_phone = dict(row)["phone"].replace("-", "").replace(" ", "")
+    input_phone  = body.phone.replace("-", "").replace(" ", "")
+    if stored_phone != input_phone:
+        raise HTTPException(status_code=400, detail="이메일 또는 휴대폰 번호가 일치하지 않습니다")
     return ok(None)
 
 
