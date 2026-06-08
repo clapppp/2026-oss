@@ -3,6 +3,8 @@ import styles from "./ApplicationStatusPage.module.css";
 import type { Application, AppStatus, EntryStatus, ApplicationEntry, AiFeedback } from "../api/types";
 import { getApplications } from "../api/application";
 import CategoryIcon from "../components/common/CategoryIcon";
+import { useAuth } from "../context/AuthContext";
+import { loadDraft, formatDraftDate, type ApplyDraft } from "../utils/draft";
 
 // ── 헬퍼 ──────────────────────────────────────────────────────
 /** "2025-01-15 14:30:25" → "2025.01.15 14:30:25" (시·분·초 포함) */
@@ -665,10 +667,16 @@ function ListItem({ app, active, onClick }: { app: Application; active: boolean;
 
 // ── 메인 ──────────────────────────────────────────────────────
 export default function ApplicationStatusPage({ onReapply }: { onReapply?: () => void }) {
+  const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Application | null>(null);
+  const [draft, setDraft] = useState<ApplyDraft | null>(null);
+
+  useEffect(() => {
+    if (user?.email) setDraft(loadDraft(user.email));
+  }, [user?.email]);
 
   useEffect(() => {
     getApplications()
@@ -684,6 +692,25 @@ export default function ApplicationStatusPage({ onReapply }: { onReapply?: () =>
           <h2 className={styles.listTitle}>신청 현황</h2>
           {!loading && !error && <span className={styles.listCount}>총 {applications.length}건</span>}
         </div>
+
+        {/* 임시저장 카드 */}
+        {draft && (
+          <div className={styles.draftCard}>
+            <div className={styles.draftCardLeft}>
+              <span className={styles.draftBadge}>임시저장</span>
+              <div className={styles.draftCardInfo}>
+                <span className={styles.draftCategories}>{draft.selectedCategories.join(" · ")}</span>
+                <span className={styles.draftSavedAt}>{formatDraftDate(draft.savedAt)} 저장</span>
+              </div>
+            </div>
+            <button type="button" className={styles.draftResumeBtn} onClick={onReapply}>
+              이어서 작성
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={12} height={12}>
+                <line x1="3" y1="8" x2="13" y2="8" /><polyline points="9 4 13 8 9 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className={styles.emptyState}><div className={styles.spinner} /><p>불러오는 중...</p></div>

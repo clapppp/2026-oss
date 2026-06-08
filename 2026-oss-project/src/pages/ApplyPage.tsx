@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import StepBar from "../components/molecules/StepBar";
 import SelectCard from "../components/molecules/SelectCard";
 import FormField from "../components/molecules/FormField";
@@ -15,6 +15,7 @@ import type { SubmitApplicationRequest, EvidenceSlot } from "../api/types";
 import { validateApplicationStep2 } from "../utils/validation";
 import { formatGender } from "../utils/formatters";
 import { MAX_CATEGORIES } from "../constants/rules";
+import { saveDraft, loadDraft, clearDraft, formatDraftDate, type ApplyDraft } from "../utils/draft";
 
 const EVIDENCE_SLOTS: { key: EvidenceSlot; label: string; hint: string }[] = [
   {
@@ -64,12 +65,39 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
   const [submitting, setSubmitting] = useState(false);
   const [submitDone, setSubmitDone] = useState(false);
   const [submittedApplyNo, setSubmittedApplyNo] = useState("");
+  const [draftBanner, setDraftBanner] = useState<ApplyDraft | null>(null);
 
   const showToast = (message?: string) => {
     if (message) setToastMessage(message);
     setToastVisible(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastVisible(false), 2500);
+  };
+
+  // 임시저장 draft 처리
+  useEffect(() => {
+    if (!user?.email) return;
+    const draft = loadDraft(user.email);
+    if (draft) setDraftBanner(draft);
+  }, [user?.email]);
+
+  const handleRestoreDraft = () => {
+    if (!draftBanner) return;
+    setSelectedCategories(draftBanner.selectedCategories);
+    setCategoryForms(draftBanner.categoryForms);
+    setStep(2);
+    setDraftBanner(null);
+  };
+
+  const handleDiscardDraft = () => {
+    if (user?.email) clearDraft(user.email);
+    setDraftBanner(null);
+  };
+
+  const handleDraftSave = () => {
+    if (!user?.email) return;
+    saveDraft(user.email, { selectedCategories, categoryForms });
+    showToast("임시저장되었습니다.");
   };
 
   const toggleCategory = (cat: string) => {
@@ -152,6 +180,7 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
       const { applyNo } = await submitApplication(data);
       setSubmittedApplyNo(applyNo);
       setSubmitDone(true);
+      if (user?.email) clearDraft(user.email);
     } catch {
       showToast("제출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -168,6 +197,26 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
         <div className="stepBarWrap">
           <StepBar steps={["01 본인 인증", "02 증빙 자료 확인", "03 최종 확인하기"]} currentStep={step} />
         </div>
+
+        {/* ── 임시저장 복원 배너 ── */}
+        {draftBanner && step === 1 && (
+          <div className="draftRestoreBanner">
+            <div className="draftRestoreInfo">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" width={18} height={18} aria-hidden="true">
+                <path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2z" />
+                <polyline points="10 6 10 10 13 13" />
+              </svg>
+              <div>
+                <strong>임시저장된 신청서가 있습니다</strong>
+                <span>{formatDraftDate(draftBanner.savedAt)} 저장 · {draftBanner.selectedCategories.join(", ")}</span>
+              </div>
+            </div>
+            <div className="draftRestoreActions">
+              <button type="button" className="draftRestoreDiscard" onClick={handleDiscardDraft}>새로 작성</button>
+              <button type="button" className="draftRestoreResume" onClick={handleRestoreDraft}>이어서 작성</button>
+            </div>
+          </div>
+        )}
 
         {/* ── Step 1: 신청인 정보 확인 ── */}
         {step === 1 && (
@@ -326,7 +375,7 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
 
             <div className="actionRow">
               <Button variant="secondary" size="lg" onClick={() => setStep(1)}>이전 단계로</Button>
-              <Button variant="secondary" size="lg">임시저장</Button>
+              <Button variant="secondary" size="lg" onClick={handleDraftSave}>임시저장</Button>
               <Button variant="primary" size="lg" onClick={handleNextStep}>다음</Button>
             </div>
           </>

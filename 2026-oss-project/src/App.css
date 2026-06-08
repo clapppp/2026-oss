@@ -308,6 +308,81 @@
   gap: 24px 16px;
 }
 
+/* ── 임시저장 복원 배너 ───────────────── */
+.draftRestoreBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: #EBF2FF;
+  border: 1px solid #c7d9f5;
+  border-radius: 8px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.draftRestoreInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #1756BD;
+  min-width: 0;
+}
+
+.draftRestoreInfo div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.draftRestoreInfo strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1248A4;
+}
+
+.draftRestoreInfo span {
+  font-size: 12px;
+  color: #3a6bc4;
+}
+
+.draftRestoreActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.draftRestoreDiscard {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #6c757d;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.draftRestoreDiscard:hover { border-color: #adb5bd; }
+
+.draftRestoreResume {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: #1756BD;
+  border: 1px solid #1756BD;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.draftRestoreResume:hover { background: #1248A4; }
+
 /* ── 본인인증 - 인적사항 확인 ─────────── */
 .identityDesc {
   font-size: 14px;
