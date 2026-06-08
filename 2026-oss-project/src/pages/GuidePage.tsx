@@ -227,7 +227,14 @@ export default function GuidePage({ onApply }: GuidePageProps) {
           </p>
           <div className={styles.memberGrid}>
             {MEMBERS.map((m) => (
-              <div key={m.name} className={styles.memberCard}>
+              <a
+                key={m.name}
+                href={m.github ? `https://github.com/${m.github}` : undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.memberCard}
+                aria-label={`${m.name} GitHub 프로필`}
+              >
                 <div className={styles.memberAvatar}>
                   <img src={m.image} alt={m.name} className={styles.memberAvatarImg} loading="lazy" />
                 </div>
@@ -238,7 +245,7 @@ export default function GuidePage({ onApply }: GuidePageProps) {
                     <span className={styles.memberGithub}>@{m.github}</span>
                   )}
                 </div>
-              </div>
+              </a>
             ))}
           </div>
           <div className={styles.creditsMeta}>

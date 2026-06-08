@@ -359,8 +359,9 @@
 
 /* ── 개발자 크레딧 ───────────────────────── */
 .credits {
-  background: #061529;
+  background: #f8f9fa;
   padding: 72px 0 80px;
+  border-top: 1px solid #e9ecef;
 }
 
 .badgeLight {
@@ -369,8 +370,9 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #1756BD;
+  border: 1px solid #c7d9f5;
+  background: #EBF2FF;
   padding: 4px 10px;
   border-radius: 4px;
   margin-bottom: 14px;
@@ -379,20 +381,20 @@
 .creditsTitle {
   font-size: 26px;
   font-weight: 700;
-  color: #fff;
+  color: #212529;
   letter-spacing: -0.03em;
   margin: 0 0 12px;
 }
 
 .creditsDesc {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.55);
+  color: #6c757d;
   line-height: 1.7;
   margin: 0 0 40px;
 }
 
 .creditsDesc strong {
-  color: rgba(255, 255, 255, 0.85);
+  color: #212529;
   font-weight: 600;
 }
 
@@ -404,34 +406,42 @@
 }
 
 .memberCard {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
   padding: 24px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
   text-align: center;
-  transition: background 0.15s, border-color 0.15s;
+  text-decoration: none;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  cursor: pointer;
 }
 
 .memberCard:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(23, 86, 189, 0.5);
+  box-shadow: 0 6px 20px rgba(23, 86, 189, 0.1);
+  border-color: #1756BD;
+  transform: translateY(-2px);
 }
 
 .memberAvatar {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: rgba(23, 86, 189, 0.3);
+  background: #e9ecef;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.7);
   overflow: hidden;
   flex-shrink: 0;
+  border: 2px solid #e9ecef;
+  transition: border-color 0.15s;
+}
+
+.memberCard:hover .memberAvatar {
+  border-color: #1756BD;
 }
 
 .memberAvatarImg {
@@ -450,25 +460,26 @@
 .memberName {
   font-size: 15px;
   font-weight: 700;
-  color: #fff;
+  color: #212529;
 }
 
 .memberRole {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #6c757d;
 }
 
 .memberGithub {
   font-size: 11px;
-  color: var(--krds-primary, #1756BD);
+  color: #1756BD;
   font-family: "SFMono-Regular", Consolas, monospace;
+  margin-top: 2px;
 }
 
 .creditsMeta {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid #e9ecef;
   padding-top: 24px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.3);
+  color: #adb5bd;
   text-align: center;
 }
 
