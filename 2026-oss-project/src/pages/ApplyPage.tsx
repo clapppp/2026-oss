@@ -15,7 +15,8 @@ import type { SubmitApplicationRequest, EvidenceSlot } from "../api/types";
 import { validateApplicationStep2 } from "../utils/validation";
 import { formatGender } from "../utils/formatters";
 import { MAX_CATEGORIES } from "../constants/rules";
-import { saveDraft, loadDraft, clearDraft, formatDraftDate, type ApplyDraft } from "../utils/draft";
+import { formatDraftDate, type ApplyDraft } from "../utils/draft";
+import { getDraft, saveDraftApi, deleteDraft, type DraftFileInfo } from "../api/draft";
 
 const EVIDENCE_SLOTS: { key: EvidenceSlot; label: string; hint: string }[] = [
   {
@@ -66,6 +67,7 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
   const [submitDone, setSubmitDone] = useState(false);
   const [submittedApplyNo, setSubmittedApplyNo] = useState("");
   const [draftBanner, setDraftBanner] = useState<ApplyDraft | null>(null);
+  const [draftFileInfos, setDraftFileInfos] = useState<DraftFileInfo[]>([]);
 
   const showToast = (message?: string) => {
     if (message) setToastMessage(message);
@@ -77,27 +79,49 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
   // 임시저장 draft 처리
   useEffect(() => {
     if (!user?.email) return;
-    const draft = loadDraft(user.email);
-    if (draft) setDraftBanner(draft);
+    getDraft()
+      .then((d) => {
+        setDraftBanner({
+          savedAt: d.savedAt,
+          selectedCategories: d.selectedCategories,
+          categoryForms: d.categoryForms,
+          fileInfos: d.fileInfos ?? [],
+        });
+      })
+      .catch(() => { /* 저장된 임시저장 없음 */ });
   }, [user?.email]);
 
   const handleRestoreDraft = () => {
     if (!draftBanner) return;
     setSelectedCategories(draftBanner.selectedCategories);
     setCategoryForms(draftBanner.categoryForms);
+    // 임시저장된 파일 이름 복원
+    const restoredFileNames: typeof fileNames = {};
+    for (const info of draftBanner.fileInfos ?? []) {
+      if (!restoredFileNames[info.cat]) restoredFileNames[info.cat] = {};
+      if (!restoredFileNames[info.cat][info.idx]) restoredFileNames[info.cat][info.idx] = {};
+      (restoredFileNames[info.cat][info.idx] as Record<string, string>)[info.slot] = info.filename;
+    }
+    setFileNames(restoredFileNames);
+    setDraftFileInfos(draftBanner.fileInfos ?? []);
     setStep(2);
     setDraftBanner(null);
   };
 
   const handleDiscardDraft = () => {
-    if (user?.email) clearDraft(user.email);
+    deleteDraft().catch(() => { /* noop */ });
     setDraftBanner(null);
+    setDraftFileInfos([]);
   };
 
-  const handleDraftSave = () => {
-    if (!user?.email) return;
-    saveDraft(user.email, { selectedCategories, categoryForms });
-    showToast("임시저장되었습니다.");
+  const handleDraftSave = async () => {
+    try {
+      const result = await saveDraftApi(selectedCategories, categoryForms, entryFiles);
+      setDraftFileInfos(result.fileInfos);
+      showToast("임시저장되었습니다.");
+    } catch {
+      showToast("임시저장 중 오류가 발생했습니다.");
+    }
   };
 
   const toggleCategory = (cat: string) => {
@@ -166,21 +190,35 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
     setSubmitting(true);
     try {
       const fieldTypeLabel = selectedCategories.length === 1 ? "단일 분야" : `복합 분야 ${selectedCategories.length}개`;
-      const data: SubmitApplicationRequest = {
-        type: `일반 유형 · ${fieldTypeLabel}`,
-        categories: selectedCategories.map((cat) => {
+
+      // 새로 업로드하지 않은 슬롯은 임시저장 파일로 대체
+      const categories = await Promise.all(
+        selectedCategories.map(async (cat) => {
           const entries = getEntries(cat);
-          return {
-            name: cat,
-            entries,
-            files: entries.map((_, idx) => ({ ...entryFiles[cat]?.[idx] })),
-          };
+          const files = await Promise.all(
+            entries.map(async (_, idx) => {
+              const newFiles: Partial<Record<EvidenceSlot, File>> = { ...entryFiles[cat]?.[idx] };
+              for (const info of draftFileInfos) {
+                if (info.cat === cat && info.idx === idx && !(info.slot in newFiles)) {
+                  try {
+                    const resp = await fetch(info.url);
+                    const blob = await resp.blob();
+                    (newFiles as Record<string, File>)[info.slot] = new File([blob], info.filename, { type: info.mimeType });
+                  } catch { /* skip */ }
+                }
+              }
+              return newFiles;
+            }),
+          );
+          return { name: cat, entries, files };
         }),
-      };
+      );
+
+      const data: SubmitApplicationRequest = { type: `일반 유형 · ${fieldTypeLabel}`, categories };
       const { applyNo } = await submitApplication(data);
       setSubmittedApplyNo(applyNo);
       setSubmitDone(true);
-      if (user?.email) clearDraft(user.email);
+      deleteDraft().catch(() => { /* noop */ });
     } catch {
       showToast("제출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {

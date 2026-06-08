@@ -4,7 +4,8 @@ import type { Application, AppStatus, EntryStatus, ApplicationEntry, AiFeedback 
 import { getApplications } from "../api/application";
 import CategoryIcon from "../components/common/CategoryIcon";
 import { useAuth } from "../context/AuthContext";
-import { loadDraft, formatDraftDate, type ApplyDraft } from "../utils/draft";
+import { formatDraftDate, type ApplyDraft } from "../utils/draft";
+import { getDraft } from "../api/draft";
 
 // ── 헬퍼 ──────────────────────────────────────────────────────
 /** "2025-01-15 14:30:25" → "2025.01.15 14:30:25" (시·분·초 포함) */
@@ -675,7 +676,17 @@ export default function ApplicationStatusPage({ onReapply }: { onReapply?: () =>
   const [draft, setDraft] = useState<ApplyDraft | null>(null);
 
   useEffect(() => {
-    if (user?.email) setDraft(loadDraft(user.email));
+    if (!user?.email) return;
+    getDraft()
+      .then((d) =>
+        setDraft({
+          savedAt: d.savedAt,
+          selectedCategories: d.selectedCategories,
+          categoryForms: d.categoryForms,
+          fileInfos: d.fileInfos ?? [],
+        }),
+      )
+      .catch(() => { /* 임시저장 없음 */ });
   }, [user?.email]);
 
   useEffect(() => {

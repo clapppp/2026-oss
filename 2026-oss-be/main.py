@@ -89,6 +89,12 @@ def init_db():
             entries_json    TEXT NOT NULL,
             ai_feedback_json TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS drafts (
+            user_id   TEXT PRIMARY KEY,
+            saved_at  TEXT NOT NULL,
+            data_json TEXT NOT NULL
+        );
     """)
     conn.commit()
     # 기존 DB에 profile_image 컬럼 없으면 추가 (마이그레이션)
@@ -105,6 +111,10 @@ init_db()
 # 프로필 사진 저장 디렉토리
 PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "photos")
 os.makedirs(PHOTOS_DIR, exist_ok=True)
+
+# 임시저장 첨부파일 디렉토리
+DRAFT_FILES_DIR = os.path.join(os.path.dirname(__file__), "draft_files")
+os.makedirs(DRAFT_FILES_DIR, exist_ok=True)
 
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
@@ -721,8 +731,105 @@ async def submit_application(
     return ok({"applyNo": apply_no})
 
 
+# ── 임시저장 API ─────────────────────────────────────────────────────────────
+
+@app.get("/api/drafts")
+def get_draft(current_user: dict = Depends(get_current_user)):
+    conn = get_db()
+    row = conn.execute(
+        "SELECT saved_at, data_json FROM drafts WHERE user_id = ?",
+        (current_user["id"],),
+    ).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="임시저장 없음")
+    data = json.loads(row["data_json"])
+    return ok({"savedAt": row["saved_at"], **data})
+
+
+@app.post("/api/drafts")
+async def save_draft_api(request: Request, current_user: dict = Depends(get_current_user)):
+    import re as _re, mimetypes as _mimetypes, shutil as _shutil
+
+    try:
+        form = await request.form()
+    except ClientDisconnect:
+        raise HTTPException(status_code=499, detail="클라이언트 연결이 끊겼습니다")
+
+    raw_data = form.get("data")
+    if not raw_data:
+        raise HTTPException(status_code=422, detail="data 필드가 없습니다")
+    try:
+        data = json.loads(raw_data)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="data JSON 파싱 오류")
+
+    # 기존 임시저장 파일 삭제
+    user_draft_dir = os.path.join(DRAFT_FILES_DIR, current_user["id"])
+    if os.path.isdir(user_draft_dir):
+        _shutil.rmtree(user_draft_dir)
+    os.makedirs(user_draft_dir, exist_ok=True)
+
+    # 업로드된 파일 처리 (key: "{cat}[{idx}].{slot}")
+    file_infos = []
+    for key, value in form.multi_items():
+        if key == "data":
+            continue
+        if not hasattr(value, "read"):
+            continue
+        file_bytes = await value.read()
+        if not file_bytes:
+            continue
+        m = _re.match(r"^(.+)\[(\d+)\]\.(\w+)$", key)
+        if not m:
+            continue
+        cat_name, idx, slot = m.group(1), int(m.group(2)), m.group(3)
+        safe_name = _re.sub(r"[^\w.\-]", "_", value.filename or f"{slot}.bin")
+        file_key = f"{cat_name}_{idx}_{slot}_{safe_name}"
+        file_path = os.path.join(user_draft_dir, file_key)
+        with open(file_path, "wb") as fp:
+            fp.write(file_bytes)
+        mime = _mimetypes.guess_type(value.filename or safe_name)[0] or "application/octet-stream"
+        file_infos.append({
+            "cat": cat_name, "idx": idx, "slot": slot,
+            "filename": value.filename or safe_name,
+            "mimeType": mime,
+            "url": f"/draft-files/{current_user['id']}/{file_key}",
+        })
+
+    data_json = json.dumps({**data, "fileInfos": file_infos}, ensure_ascii=False)
+    now = datetime.datetime.now().isoformat()
+
+    conn = get_db()
+    conn.execute(
+        """INSERT INTO drafts (user_id, saved_at, data_json) VALUES (?, ?, ?)
+           ON CONFLICT(user_id) DO UPDATE SET saved_at = excluded.saved_at, data_json = excluded.data_json""",
+        (current_user["id"], now, data_json),
+    )
+    conn.commit()
+    conn.close()
+
+    return ok({"savedAt": now, "fileInfos": file_infos})
+
+
+@app.delete("/api/drafts")
+def delete_draft_api(current_user: dict = Depends(get_current_user)):
+    import shutil as _shutil
+    user_draft_dir = os.path.join(DRAFT_FILES_DIR, current_user["id"])
+    if os.path.isdir(user_draft_dir):
+        _shutil.rmtree(user_draft_dir)
+    conn = get_db()
+    conn.execute("DELETE FROM drafts WHERE user_id = ?", (current_user["id"],))
+    conn.commit()
+    conn.close()
+    return ok({})
+
+
 # ── 프로필 사진 정적 파일 서빙 ────────────────────────────────────────────────
 app.mount("/photos", StaticFiles(directory=PHOTOS_DIR), name="photos")
+
+# ── 임시저장 파일 정적 서빙 ──────────────────────────────────────────────────
+app.mount("/draft-files", StaticFiles(directory=DRAFT_FILES_DIR), name="draft-files")
 
 # ── 프론트엔드 정적 파일 서빙 (빌드된 dist/) ─────────────────────────────────
 _dist = os.path.join(os.path.dirname(__file__), "../2026-oss-project/dist")
