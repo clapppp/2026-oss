@@ -11,15 +11,14 @@ const THEATER_ROLE_MIN: Record<string, { min: number; unit: string }> = {
 
 // ── 문학: 세부장르별 최소 편수 ────────────────────────────────────────────────
 const LIT_GENRE_MIN: Record<string, { min: number; unit: string; label: string }> = {
-  "시/시조":           { min: 5, unit: "편", label: "시/시조" },
-  "수필":              { min: 5, unit: "편", label: "수필" },
-  "소설 (단편)":       { min: 3, unit: "편", label: "소설(단편)" },
-  "소설 (장편·기타)":  { min: 1, unit: "편", label: "소설(장편·기타)" },
-  "동화/청소년소설":   { min: 1, unit: "편", label: "동화/청소년소설" },
-  "평전":              { min: 1, unit: "편", label: "평전" },
-  "희곡":              { min: 1, unit: "편", label: "희곡" },
-  "평론":              { min: 3, unit: "편", label: "평론" },
-  "문학작품집":        { min: 1, unit: "권", label: "문학작품집" },
+  "시/시조":          { min: 5, unit: "편", label: "시/시조" },
+  "수필":             { min: 5, unit: "편", label: "수필" },
+  "소설 (단편)":      { min: 3, unit: "편", label: "소설(단편)" },
+  "소설 (장편·기타)": { min: 1, unit: "편", label: "소설(장편·기타)" },
+  "평전":             { min: 1, unit: "편", label: "평전" },
+  "희곡":             { min: 1, unit: "편", label: "희곡" },
+  "평론":             { min: 3, unit: "편", label: "평론" },
+  "문학작품집":       { min: 1, unit: "권", label: "문학작품집" },
 };
 
 /** 비율 합계 방식: 각 그룹의 (실제 수 / 최소 수) 합이 1 이상이면 통과 */

@@ -15,7 +15,7 @@ export interface CategoryMeta {
 }
 
 export const CATEGORY_META: Record<string, CategoryMeta> = {
-  "문학":         { minCount: 1, unit: "편", hint: "시/시조·수필 5편 | 평론·소설(단편) 3편 | 소설(장편)·동화·희곡·평전·문학작품집 1편 이상 (장르별 비율 합산)" },
+  "문학":         { minCount: 1, unit: "편", hint: "시/시조·수필 5편 | 평론·소설(단편) 3편 | 소설(장편)·평전·희곡·문학작품집 1편 이상 (장르별 비율 합산)" },
   "디자인 / 공예":{ minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
   "일반미술":     { minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
   "전통미술":     { minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
@@ -39,7 +39,7 @@ export const CATEGORY_FORM_CONFIG: Record<string, FieldConfig[]> = {
       key: "genre", label: "세부장르", type: "select",
       options: [
         "시/시조", "수필",
-        "소설 (단편)", "소설 (장편·기타)", "동화/청소년소설",
+        "소설 (단편)", "소설 (장편·기타)",
         "평전", "희곡", "평론", "문학작품집",
       ],
     },
