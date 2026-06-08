@@ -727,4 +727,16 @@ app.mount("/photos", StaticFiles(directory=PHOTOS_DIR), name="photos")
 # ── 프론트엔드 정적 파일 서빙 (빌드된 dist/) ─────────────────────────────────
 _dist = os.path.join(os.path.dirname(__file__), "../2026-oss-project/dist")
 if os.path.isdir(_dist):
-    app.mount("/", StaticFiles(directory=_dist, html=True), name="static")
+    # Vite 빌드 결과물의 JS/CSS/이미지 등 정적 에셋
+    app.mount("/assets", StaticFiles(directory=os.path.join(_dist, "assets")), name="static-assets")
+
+from fastapi.responses import FileResponse as _FileResponse
+
+@app.get("/{full_path:path}")
+async def spa_fallback(full_path: str):
+    """SPA 히스토리 라우팅 — /apply, /status 등 모든 경로에서 index.html 반환.
+    dist/ 안에 실제 파일(favicon, 프로필 이미지 등)이 있으면 그 파일을 우선 서빙."""
+    candidate = os.path.join(_dist, full_path)
+    if os.path.isfile(candidate):
+        return _FileResponse(candidate)
+    return _FileResponse(os.path.join(_dist, "index.html"))
