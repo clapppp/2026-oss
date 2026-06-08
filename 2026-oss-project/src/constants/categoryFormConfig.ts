@@ -13,7 +13,7 @@ export interface CategoryMeta {
 }
 
 export const CATEGORY_META: Record<string, CategoryMeta> = {
-  "문학":         { minCount: 1, unit: "편", hint: "시/시조/수필 5편, 평론 3편, 단편소설 3편, 소설·희곡·평전 1편 이상" },
+  "문학":         { minCount: 5, unit: "편", hint: "시/시조/수필 5편, 평론 3편, 단편소설 3편, 소설·희곡·평전 1편 이상" },
   "디자인 / 공예":{ minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
   "일반미술":     { minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
   "전통미술":     { minCount: 5, unit: "회", hint: "매체발표 또는 전시 합산 5회 이상" },
