@@ -457,10 +457,19 @@ def get_applications(current_user: dict = Depends(get_current_user)):
             result.append(app_schema(r, name, pen_name))
     else:
         rows = conn.execute(
-            "SELECT * FROM applications WHERE user_id = ? ORDER BY apply_date DESC",
+            """SELECT a.*, u.name as applicant_name, u.pen_name as applicant_pen_name
+               FROM applications a
+               JOIN users u ON a.user_id = u.id
+               WHERE a.user_id = ?
+               ORDER BY a.apply_date DESC""",
             (current_user["id"],),
         ).fetchall()
-        result = [app_schema(dict(r), current_user["name"], current_user.get("pen_name", "") or "") for r in rows]
+        result = []
+        for r in rows:
+            r = dict(r)
+            name     = r.pop("applicant_name")
+            pen_name = r.pop("applicant_pen_name", "") or ""
+            result.append(app_schema(r, name, pen_name))
     conn.close()
 
     return ok(result)
