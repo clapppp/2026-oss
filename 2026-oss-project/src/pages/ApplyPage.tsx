@@ -183,6 +183,7 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                 <InfoRow label="성별" value={user ? formatGender(user.gender) : ""} />
                 <InfoRow label="휴대폰" value={user?.phone ?? ""} />
                 <InfoRow label="이메일" value={user?.email ?? ""} />
+                <InfoRow label="필명" value={user?.penName || "미등록"} />
               </div>
             </section>
             <div className="actionRow">
@@ -359,6 +360,7 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                   <InfoRow label="성별" value={user ? formatGender(user.gender) : ""} />
                   <InfoRow label="휴대폰" value={user?.phone ?? ""} />
                   <InfoRow label="이메일" value={user?.email ?? ""} />
+                  <InfoRow label="필명" value={user?.penName || "미등록"} />
                 </div>
               </section>
 
