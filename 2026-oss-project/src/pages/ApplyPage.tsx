@@ -183,7 +183,18 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
           ...prev,
           [cat]: { ...prev[cat], [idx]: { ...prev[cat]?.[idx], [slot]: file } },
         }));
+      } else {
+        // 파일 제거 시 entryFiles에서도 삭제
+        setEntryFiles((prev) => {
+          const slotMap = { ...(prev[cat]?.[idx] ?? {}) };
+          delete slotMap[slot];
+          return { ...prev, [cat]: { ...prev[cat], [idx]: slotMap } };
+        });
       }
+      // 임시저장 파일 정보도 해당 슬롯 제거 (새로 선택하거나 지운 경우)
+      setDraftFileInfos((prev) =>
+        prev.filter((info) => !(info.cat === cat && info.idx === idx && info.slot === slot)),
+      );
     };
 
   const handleSubmit = async () => {
@@ -387,6 +398,7 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
                                 <FileInput
                                   label={label}
                                   onChange={handleFileChange(cat, idx, key)}
+                                  value={fileNames[cat]?.[idx]?.[key] ?? ""}
                                 />
                               </div>
                             </div>

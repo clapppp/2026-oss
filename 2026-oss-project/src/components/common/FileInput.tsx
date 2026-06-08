@@ -4,21 +4,32 @@ import styles from "./FileInput.module.css";
 interface FileInputProps {
   label: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** 외부에서 표시할 파일명 (임시저장 복원 등). 지정하면 내부 state 대신 이 값을 사용 */
+  value?: string;
 }
 
-export default function FileInput({ label, onChange }: FileInputProps) {
+export default function FileInput({ label, onChange, value }: FileInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [fileName, setFileName] = useState("");
+  const [internalName, setInternalName] = useState("");
+
+  // value prop이 바뀌면 내부 state 동기화 (임시저장 복원 시)
+  const prevValueRef = useRef(value);
+  if (prevValueRef.current !== value) {
+    prevValueRef.current = value;
+    if (value !== undefined) setInternalName(value);
+  }
+
+  const fileName = value !== undefined ? value : internalName;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    setFileName(file ? file.name : "");
+    setInternalName(file ? file.name : "");
     onChange?.(e);
   };
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setFileName("");
+    setInternalName("");
     if (inputRef.current) inputRef.current.value = "";
     onChange?.({ target: { files: null } } as unknown as React.ChangeEvent<HTMLInputElement>);
   };
