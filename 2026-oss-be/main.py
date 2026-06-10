@@ -110,6 +110,54 @@ def init_db():
 
 init_db()
 
+
+def migrate_application_files():
+    """기존 entries_json의 base64 파일 데이터를 디스크로 마이그레이션"""
+    import base64 as _b64, re as _re2
+    _app_dir = os.path.join(os.path.dirname(__file__), "application_files")
+    os.makedirs(_app_dir, exist_ok=True)
+    conn = get_db()
+    rows = conn.execute("SELECT apply_no, entries_json FROM applications").fetchall()
+    migrated = 0
+    for row in rows:
+        entries = json.loads(row["entries_json"])
+        changed = False
+        for entry in entries:
+            new_files = []
+            for f in entry.get("files", []):
+                if f.get("data"):
+                    apply_dir = os.path.join(_app_dir, row["apply_no"])
+                    os.makedirs(apply_dir, exist_ok=True)
+                    safe_name = _re2.sub(r"[^\w.\-]", "_", f.get("filename", "file.bin"))
+                    file_key = f"{f['slot']}_{safe_name}"
+                    file_path = os.path.join(apply_dir, file_key)
+                    try:
+                        with open(file_path, "wb") as fp:
+                            fp.write(_b64.b64decode(f["data"]))
+                        new_f = {k: v for k, v in f.items() if k != "data"}
+                        new_f["path"] = f"{row['apply_no']}/{file_key}"
+                        new_files.append(new_f)
+                        changed = True
+                    except Exception as e:
+                        log.warning("[마이그레이션 실패] %s: %s", file_key, e)
+                        new_files.append(f)
+                else:
+                    new_files.append(f)
+            entry["files"] = new_files
+        if changed:
+            conn.execute(
+                "UPDATE applications SET entries_json = ? WHERE apply_no = ?",
+                (json.dumps(entries, ensure_ascii=False), row["apply_no"]),
+            )
+            migrated += 1
+    conn.commit()
+    conn.close()
+    if migrated:
+        log.info("[마이그레이션] %d건 base64 → 디스크 변환 완료", migrated)
+
+
+migrate_application_files()
+
 # 프로필 사진 저장 디렉토리
 PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "photos")
 os.makedirs(PHOTOS_DIR, exist_ok=True)
@@ -117,6 +165,13 @@ os.makedirs(PHOTOS_DIR, exist_ok=True)
 # 임시저장 첨부파일 디렉토리
 DRAFT_FILES_DIR = os.path.join(os.path.dirname(__file__), "draft_files")
 os.makedirs(DRAFT_FILES_DIR, exist_ok=True)
+
+# 신청서 첨부파일 디렉토리
+APPLICATION_FILES_DIR = os.path.join(os.path.dirname(__file__), "application_files")
+os.makedirs(APPLICATION_FILES_DIR, exist_ok=True)
+
+# 파일 크기 제한 (10MB)
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
@@ -599,16 +654,35 @@ def download_entry_file(
 
     for f in entries[entry_idx].get("files", []):
         if f.get("slot") == slot:
+            mime = f.get("mimeType", "application/octet-stream")
+            raw_name = f.get("filename", slot)
+            # C16: 파일명 안전 인코딩
+            from urllib.parse import quote as _quote
+            safe_filename = _quote(raw_name, safe="")
+            disposition = f"attachment; filename*=UTF-8''{safe_filename}"
+
+            # 신규: 디스크에서 읽기
+            if f.get("path"):
+                full_path = os.path.realpath(
+                    os.path.join(APPLICATION_FILES_DIR, f["path"])
+                )
+                # 경로 탈출 방지
+                if not full_path.startswith(os.path.realpath(APPLICATION_FILES_DIR)):
+                    raise HTTPException(status_code=400, detail="잘못된 파일 경로")
+                if not os.path.isfile(full_path):
+                    raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
+                with open(full_path, "rb") as fp:
+                    content = fp.read()
+                return Response(content=content, media_type=mime,
+                                headers={"Content-Disposition": disposition})
+
+            # 구형: base64 폴백
             data = f.get("data", "")
             if not data:
                 raise HTTPException(status_code=404, detail="파일 데이터가 없습니다")
-            mime = f.get("mimeType", "application/octet-stream")
-            filename = f.get("filename", slot)
-            return Response(
-                content=b64.b64decode(data),
-                media_type=mime,
-                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-            )
+            return Response(content=b64.b64decode(data), media_type=mime,
+                            headers={"Content-Disposition": disposition})
+
     raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
 
 
@@ -631,6 +705,20 @@ async def submit_application(
     except json.JSONDecodeError:
         raise HTTPException(status_code=422, detail="meta JSON 파싱 오류")
 
+    import re, mimetypes, secrets
+
+    # apply_no 먼저 생성 (파일 저장 경로에 사용)
+    CATEGORY_PREFIX = {
+        "문학": "LIT", "일반미술": "FAR", "전통미술": "TAR",
+        "디자인 / 공예": "DES", "사진": "PHO", "만화": "COM",
+        "영화": "FLM", "방송": "BRD", "공연": "PFM", "연극": "THE",
+        "무용": "DAN", "국악": "KMU", "대중음악": "POP", "일반음악": "MUS",
+    }
+    cat_names = [c["name"] for c in meta.get("categories", [])]
+    prefix   = CATEGORY_PREFIX.get(cat_names[0], "ART") if len(cat_names) == 1 else "MIX"
+    apply_no = f"{prefix}-{datetime.date.today().strftime('%Y%m%d')}-{secrets.token_hex(2).upper()}"
+    now      = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     # entries 정리
     entries = []
     for cat in meta.get("categories", []):
@@ -642,35 +730,53 @@ async def submit_application(
             entry_dict["entryReason"] = None
             entries.append(entry_dict)
 
-    # 업로드 파일 수집 (key: "{category}[{index}].{slot}")
-    import re, base64, mimetypes
-    raw_files: dict[str, tuple[bytes, str]] = {}
-    for key, value in form.multi_items():
-        if key in ("meta", "data"):
-            continue
-        if hasattr(value, "read"):
-            file_bytes = await value.read()
-            if file_bytes:
-                raw_files[key] = (file_bytes, value.filename or key)
-
+    # 업로드 파일 수집 + 크기 검사 + 디스크 저장
+    app_files_dir = os.path.join(APPLICATION_FILES_DIR, apply_no)
     FILE_SLOT_LABELS = {
         "workImage": "작품 이미지", "detailPage1": "상세 페이지 1",
         "detailPage2": "상세 페이지 2", "income": "수익 증빙", "other": "기타 서류",
     }
-    # entries에 files 삽입
+    raw_files: dict[str, tuple[bytes, str]] = {}
     cat_entry_files: dict[str, dict[int, list]] = {}
-    for key, (file_bytes, filename) in raw_files.items():
+
+    for key, value in form.multi_items():
+        if key in ("meta", "data"):
+            continue
+        if not hasattr(value, "read"):
+            continue
+        file_bytes = await value.read()
+        if not file_bytes:
+            continue
+
+        # 크기 제한
+        if len(file_bytes) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"파일 크기는 10MB 이하여야 합니다 ({value.filename})",
+            )
+
+        raw_files[key] = (file_bytes, value.filename or key)
+
         m = re.match(r"^(.+)\[(\d+)\]\.(\w+)$", key)
         if not m:
             continue
         cat_name, idx, slot = m.group(1), int(m.group(2)), m.group(3)
-        mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+        orig_name = value.filename or f"{slot}.bin"
+        safe_name = re.sub(r"[^\w.\-]", "_", orig_name)
+        file_key  = f"{slot}_{safe_name}"
+        mime      = mimetypes.guess_type(orig_name)[0] or "application/octet-stream"
+
+        # 디스크에 저장
+        os.makedirs(app_files_dir, exist_ok=True)
+        with open(os.path.join(app_files_dir, file_key), "wb") as fp:
+            fp.write(file_bytes)
+
         cat_entry_files.setdefault(cat_name, {}).setdefault(idx, []).append({
             "slot":     slot,
             "label":    FILE_SLOT_LABELS.get(slot, slot),
-            "filename": filename,
+            "filename": orig_name,
             "mimeType": mime,
-            "data":     base64.standard_b64encode(file_bytes).decode(),
+            "path":     f"{apply_no}/{file_key}",   # base64 대신 경로 저장
         })
 
     cat_idx_counter: dict[str, int] = {}
@@ -679,30 +785,6 @@ async def submit_application(
         idx = cat_idx_counter.get(cat, 0)
         cat_idx_counter[cat] = idx + 1
         entry["files"] = cat_entry_files.get(cat, {}).get(idx, [])
-
-    # DB에 즉시 저장 (ai_feedback_json 은 NULL — 백그라운드에서 채워짐)
-    import secrets
-    CATEGORY_PREFIX = {
-        "문학":        "LIT",
-        "일반미술":    "FAR",
-        "전통미술":    "TAR",
-        "디자인 / 공예": "DES",
-        "사진":        "PHO",
-        "만화":        "COM",
-        "영화":        "FLM",
-        "방송":        "BRD",
-        "공연":        "PFM",
-        "연극":        "THE",
-        "무용":        "DAN",
-        "국악":        "KMU",
-        "대중음악":    "POP",
-        "일반음악":    "MUS",
-    }
-    cat_names = [c["name"] for c in meta.get("categories", [])]
-    prefix = CATEGORY_PREFIX.get(cat_names[0], "ART") if len(cat_names) == 1 else "MIX"
-    suffix = secrets.token_hex(2).upper()  # 랜덤 4자리 16진수
-    apply_no = f"{prefix}-{datetime.date.today().strftime('%Y%m%d')}-{suffix}"
-    now      = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     conn = get_db()
     conn.execute(
