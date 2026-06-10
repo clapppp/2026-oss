@@ -21,9 +21,9 @@ import jwt
 import anthropic
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks, UploadFile, File
+from fastapi.responses import JSONResponse
 from starlette.requests import ClientDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -157,7 +157,7 @@ def create_token(user_id: str) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-security = HTTPBearer()
+COOKIE_NAME = "artpass_token"
 
 
 def seed_accounts():
@@ -201,9 +201,12 @@ def seed_accounts():
 seed_accounts()
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def get_current_user(request: Request):
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다")
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload["sub"]
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="토큰이 만료되었습니다")
@@ -318,12 +321,27 @@ def login(body: LoginBody):
 
     user = dict(row)
     token = create_token(user["id"])
-    return ok({"user": user_schema(user), "token": token})
+    response = JSONResponse(content=ok({"user": user_schema(user)}))
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=7 * 24 * 3600,
+    )
+    return response
 
 
 @app.post("/api/auth/logout")
 def logout():
-    return ok(None)
+    response = JSONResponse(content=ok(None))
+    response.delete_cookie(key=COOKIE_NAME, samesite="lax")
+    return response
+
+
+@app.get("/api/auth/me")
+def get_me(current_user: dict = Depends(get_current_user)):
+    return ok({"user": user_schema(current_user)})
 
 
 @app.post("/api/auth/verify-user")

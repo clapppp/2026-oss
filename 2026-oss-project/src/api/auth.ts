@@ -1,4 +1,4 @@
-import { request, tokenStore } from "./client";
+import { request } from "./client";
 import type { User, SignupRequest } from "./types";
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
@@ -22,21 +22,29 @@ export async function login(email: string, password: string): Promise<User> {
     const found = MOCK_ACCOUNTS.find((u) => u.email === email && u.password === password);
     if (!found) throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
     const { password: _, ...user } = found;
-    tokenStore.set("mock-token");
     return user;
   }
-  const { user, token } = await request<{ user: User; token: string }>("/api/auth/login", {
+  const { user } = await request<{ user: User }>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  tokenStore.set(token);
   return user;
 }
 
 export async function logout(): Promise<void> {
-  if (USE_MOCK) { tokenStore.clear(); return; }
+  if (USE_MOCK) return;
   try { await request("/api/auth/logout", { method: "POST" }); }
-  finally { tokenStore.clear(); }
+  catch { /* 무시 */ }
+}
+
+export async function fetchMe(): Promise<User | null> {
+  if (USE_MOCK) return null;
+  try {
+    const { user } = await request<{ user: User }>("/api/auth/me");
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 export async function signup(data: SignupRequest): Promise<User> {
@@ -46,7 +54,6 @@ export async function signup(data: SignupRequest): Promise<User> {
       phone: data.phone, email: data.email, isVerified: false,
       nationality: "korean", penName: "", role: "user",
     };
-    tokenStore.set("mock-token");
     return user;
   }
   const { user } = await request<{ user: User }>("/api/auth/signup", {

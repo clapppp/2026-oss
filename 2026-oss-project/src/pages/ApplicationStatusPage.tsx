@@ -188,10 +188,9 @@ function FileBtn({ label, filename, appId, entryIdx, slot }: {
   async function handleDownload() {
     setLoading(true);
     try {
-      const token = localStorage.getItem("artpass_token");
       const res = await fetch(
         `/api/applications/${appId}/file?entry_idx=${entryIdx}&slot=${slot}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+        { credentials: "include" },
       );
       if (!res.ok) throw new Error("파일을 불러올 수 없습니다");
       const blob = await res.blob();

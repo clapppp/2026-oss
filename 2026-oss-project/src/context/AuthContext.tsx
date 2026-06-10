@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../api/types";
-import { login as apiLogin, logout as apiLogout } from "../api/auth";
+import { login as apiLogin, logout as apiLogout, fetchMe } from "../api/auth";
 import { updateProfile, type UpdateProfilePayload } from "../api/user";
-import { tokenStore } from "../api/client";
 
 export type { User } from "../api/types";
 
@@ -30,14 +29,22 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // 앱 초기 마운트 시 localStorage에서 세션 복원
-  const [user, setUser] = useState<User | null>(() => {
-    if (!tokenStore.get()) return null;
-    return loadStoredUser();
-  });
+  const [user, setUser] = useState<User | null>(loadStoredUser);
+
+  // 앱 초기 마운트 시 쿠키 유효성 검증 (서버에 /api/auth/me 호출)
+  useEffect(() => {
+    fetchMe().then((serverUser) => {
+      if (serverUser) {
+        localStorage.setItem(USER_KEY, JSON.stringify(serverUser));
+        setUser(serverUser);
+      } else {
+        localStorage.removeItem(USER_KEY);
+        setUser(null);
+      }
+    });
+  }, []);
 
   const clearSession = useCallback(() => {
-    tokenStore.clear();
     localStorage.removeItem(USER_KEY);
     setUser(null);
   }, []);
