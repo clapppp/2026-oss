@@ -159,6 +159,31 @@ def create_token(user_id: str) -> str:
 
 COOKIE_NAME = "artpass_token"
 
+# ── 로그인 시도 제한 (메모리 기반) ────────────────────────
+LOGIN_MAX_ATTEMPTS = 10       # 최대 실패 횟수
+LOGIN_LOCKOUT_SECONDS = 300   # 잠금 시간 (5분)
+
+_login_attempts: dict[str, dict] = {}
+# { email: {"count": int, "locked_until": datetime | None} }
+
+def _check_login_lockout(email: str) -> None:
+    entry = _login_attempts.get(email)
+    if not entry:
+        return
+    if entry.get("locked_until") and datetime.datetime.utcnow() < entry["locked_until"]:
+        remaining = int((entry["locked_until"] - datetime.datetime.utcnow()).total_seconds())
+        raise HTTPException(status_code=429, detail=f"로그인 시도가 너무 많습니다. {remaining}초 후 다시 시도해 주세요.")
+
+def _record_login_failure(email: str) -> None:
+    entry = _login_attempts.setdefault(email, {"count": 0, "locked_until": None})
+    entry["count"] += 1
+    if entry["count"] >= LOGIN_MAX_ATTEMPTS:
+        entry["locked_until"] = datetime.datetime.utcnow() + datetime.timedelta(seconds=LOGIN_LOCKOUT_SECONDS)
+        entry["count"] = 0
+
+def _clear_login_attempts(email: str) -> None:
+    _login_attempts.pop(email, None)
+
 
 def seed_accounts():
     conn = get_db()
@@ -312,13 +337,17 @@ class ChangePasswordBody(BaseModel):
 
 @app.post("/api/auth/login")
 def login(body: LoginBody):
+    _check_login_lockout(body.email)
+
     conn = get_db()
     row = conn.execute("SELECT * FROM users WHERE email = ?", (body.email,)).fetchone()
     conn.close()
 
     if not row or not verify_password(body.password, row["password_hash"]):
+        _record_login_failure(body.email)
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다")
 
+    _clear_login_attempts(body.email)
     user = dict(row)
     token = create_token(user["id"])
     response = JSONResponse(content=ok({"user": user_schema(user)}))
