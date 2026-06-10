@@ -23,7 +23,8 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
 
 
 # 페이지당 이 글자 수 이상이면 텍스트 레이어가 충분하다고 판단
-_MIN_CHARS_PER_PAGE = 50
+# 근거: 실제 텍스트 PDF는 보통 300~3000자/페이지, 이미지 기반은 0~30자(헤더/쪽번호 수준)
+_MIN_CHARS_PER_PAGE = 300
 
 
 def _extract_pdf(file_bytes: bytes) -> str:
