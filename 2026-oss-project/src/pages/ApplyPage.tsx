@@ -13,7 +13,7 @@ import { useAuth } from "../context/AuthContext";
 import { submitApplication } from "../api/application";
 import type { SubmitApplicationRequest, EvidenceSlot } from "../api/types";
 import { validateApplicationStep2, getCategoryProgress } from "../utils/validation";
-import { formatGender } from "../utils/formatters";
+import { formatGender, formatPhone, formatBirth } from "../utils/formatters";
 import { MAX_CATEGORIES } from "../constants/rules";
 import { formatDraftDate, type ApplyDraft } from "../utils/draft";
 import { getDraft, saveDraftApi, deleteDraft, type DraftFileInfo } from "../api/draft";
@@ -278,9 +278,9 @@ export default function ApplyPage({ onGoToMyPage, onGoToStatus }: ApplyPageProps
               <div className="identityTable">
                 <InfoRow label="이름" value={user?.name ?? ""} />
                 <InfoRow label="필명" value={user?.penName || "미등록"} />
-                <InfoRow label="생년월일" value={user?.birth ?? ""} />
+                <InfoRow label="생년월일" value={user?.birth ? formatBirth(user.birth) : ""} />
                 <InfoRow label="성별" value={user ? formatGender(user.gender) : ""} />
-                <InfoRow label="휴대폰" value={user?.phone ?? ""} />
+                <InfoRow label="휴대폰" value={user?.phone ? formatPhone(user.phone) : ""} />
                 <InfoRow label="이메일" value={user?.email ?? ""} />
               </div>
             </section>
