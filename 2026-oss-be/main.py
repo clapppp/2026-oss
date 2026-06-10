@@ -111,53 +111,6 @@ def init_db():
 init_db()
 
 
-def migrate_application_files():
-    """기존 entries_json의 base64 파일 데이터를 디스크로 마이그레이션"""
-    import base64 as _b64, re as _re2
-    _app_dir = os.path.join(os.path.dirname(__file__), "application_files")
-    os.makedirs(_app_dir, exist_ok=True)
-    conn = get_db()
-    rows = conn.execute("SELECT apply_no, entries_json FROM applications").fetchall()
-    migrated = 0
-    for row in rows:
-        entries = json.loads(row["entries_json"])
-        changed = False
-        for entry in entries:
-            new_files = []
-            for f in entry.get("files", []):
-                if f.get("data"):
-                    apply_dir = os.path.join(_app_dir, row["apply_no"])
-                    os.makedirs(apply_dir, exist_ok=True)
-                    safe_name = _re2.sub(r"[^\w.\-]", "_", f.get("filename", "file.bin"))
-                    file_key = f"{f['slot']}_{safe_name}"
-                    file_path = os.path.join(apply_dir, file_key)
-                    try:
-                        with open(file_path, "wb") as fp:
-                            fp.write(_b64.b64decode(f["data"]))
-                        new_f = {k: v for k, v in f.items() if k != "data"}
-                        new_f["path"] = f"{row['apply_no']}/{file_key}"
-                        new_files.append(new_f)
-                        changed = True
-                    except Exception as e:
-                        log.warning("[마이그레이션 실패] %s: %s", file_key, e)
-                        new_files.append(f)
-                else:
-                    new_files.append(f)
-            entry["files"] = new_files
-        if changed:
-            conn.execute(
-                "UPDATE applications SET entries_json = ? WHERE apply_no = ?",
-                (json.dumps(entries, ensure_ascii=False), row["apply_no"]),
-            )
-            migrated += 1
-    conn.commit()
-    conn.close()
-    if migrated:
-        log.info("[마이그레이션] %d건 base64 → 디스크 변환 완료", migrated)
-
-
-migrate_application_files()
-
 # 프로필 사진 저장 디렉토리
 PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "photos")
 os.makedirs(PHOTOS_DIR, exist_ok=True)
