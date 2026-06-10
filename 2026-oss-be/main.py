@@ -42,7 +42,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SECRET_KEY = "artpass-demo-secret-key"
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY 환경변수가 설정되지 않았습니다")
 ALGORITHM = "HS256"
 DB_PATH = "artpass.db"
 
