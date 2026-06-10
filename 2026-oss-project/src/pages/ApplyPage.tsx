@@ -21,28 +21,28 @@ import { getDraft, saveDraftApi, deleteDraft, type DraftFileInfo } from "../api/
 const EVIDENCE_SLOTS: { key: EvidenceSlot; label: string; hint: string }[] = [
   {
     key: "workImage",
-    label: "작품정보이미지",
-    hint: "예: 제목, 포스터, 프로그램팸플릿, 발행정보, 방화정보, 연재출판정보 등",
+    label: "작품 정보 (PDF)",
+    hint: "포스터·팸플릿·발행정보·연재출판정보 등을 PDF로 제출",
   },
   {
     key: "detailPage1",
-    label: "상세페이지 (1)",
-    hint: "예: 제목, 작품주요인, 상세이미지, 작품연재상세정보 등",
+    label: "상세페이지 1 (PDF)",
+    hint: "작품 제목·주요 인물·상세 내용·연재 정보 등을 PDF로 제출",
   },
   {
     key: "detailPage2",
-    label: "상세페이지 (2)",
-    hint: "ISSN/ISBN, 발행처, 발행자 등",
+    label: "상세페이지 2 (PDF)",
+    hint: "ISSN/ISBN·발행처·발행자 등 출판 정보를 PDF로 제출",
   },
   {
     key: "income",
-    label: "수입 관련 자료",
-    hint: "예: 통장사본, 제작비인건, 일급내역 등",
+    label: "수입 관련 자료 (PDF)",
+    hint: "통장 사본·제작비 내역·인건비 명세 등을 PDF로 제출",
   },
   {
     key: "other",
-    label: "기타",
-    hint: "예: 저작권자료, 초청장, 선정내역, 진행자료, 보도자료, 추가 내지, 추가 프로그램팸플릿, 온라인관련 증빙자료 등",
+    label: "기타 증빙 (PDF)",
+    hint: "저작권 자료·초청장·선정 내역·보도자료·온라인 증빙 등을 PDF로 제출",
   },
 ];
 
