@@ -1,7 +1,7 @@
 import sqlite3
 import json
 import uuid
-import hashlib
+import bcrypt
 import datetime
 import os
 import logging
@@ -130,7 +130,10 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 # ── Auth helpers ──────────────────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
 
 
 def validate_password_strength(pw: str) -> str | None:
@@ -310,7 +313,7 @@ def login(body: LoginBody):
     row = conn.execute("SELECT * FROM users WHERE email = ?", (body.email,)).fetchone()
     conn.close()
 
-    if not row or row["password_hash"] != hash_password(body.password):
+    if not row or not verify_password(body.password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다")
 
     user = dict(row)
@@ -464,7 +467,7 @@ def delete_photo(current_user: dict = Depends(get_current_user)):
 
 @app.patch("/api/auth/password")
 def change_password(body: ChangePasswordBody, current_user: dict = Depends(get_current_user)):
-    if current_user["password_hash"] != hash_password(body.currentPassword):
+    if not verify_password(body.currentPassword, current_user["password_hash"]):
         raise HTTPException(status_code=400, detail="현재 비밀번호가 올바르지 않습니다")
     pw_err = validate_password_strength(body.newPassword)
     if pw_err:
