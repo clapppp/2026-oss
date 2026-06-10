@@ -52,25 +52,48 @@ severity 기준:
 - warning: 확인이 필요하거나 불명확한 항목"""
 
 
-def _kopis_section(kopis_results: list) -> str:
-    lines = ["\n[KOPIS 공연예술통합정보 조회 결과]"]
-    for i, r in enumerate(kopis_results):
+def _external_section(external_results: list) -> str:
+    lines = []
+    for i, r in enumerate(external_results):
         if r is None:
-            continue  # KOPIS 대상 아닌 분야는 표시 생략
-        if not r.get("found"):
-            lines.append(f"  항목 {i+1}: KOPIS에서 '{r.get('title', '')}' 공연 미발견")
             continue
+        source = r.get("source", "external")
+        prefix = {
+            "kopis":      "KOPIS 공연예술통합정보",
+            "kakao_book": "카카오 도서 검색",
+            "kmdb":       "KMDB 한국영화데이터베이스",
+        }.get(source, source)
+
+        if not r.get("found"):
+            lines.append(f"  항목 {i+1}: [{prefix}] '{r.get('title', '')}' 미발견")
+            continue
+
         m = r.get("matched", {})
-        lines.append(f"  항목 {i+1}: KOPIS 일치 공연 발견")
-        lines.append(f"    공연명: {m.get('title', '')}")
-        lines.append(f"    공연기간: {m.get('start', '')} ~ {m.get('end', '')}")
-        lines.append(f"    공연장(KOPIS): {m.get('venue', '')}")
-        lines.append(f"    신청자 기재 공연장: {r.get('venue_claimed', '')}")
-        if m.get("cast"):
-            lines.append(f"    출연진: {m['cast']}")
-        if m.get("crew"):
-            lines.append(f"    제작진: {m['crew']}")
-    return "\n".join(lines)
+        lines.append(f"  항목 {i+1}: [{prefix}] 일치 데이터 발견")
+
+        if source == "kopis":
+            lines.append(f"    공연명: {m.get('title', '')}")
+            lines.append(f"    공연기간: {m.get('start', '')} ~ {m.get('end', '')}")
+            lines.append(f"    공연장(KOPIS): {m.get('venue', '')}")
+            lines.append(f"    신청자 기재 공연장: {r.get('venue_claimed', '')}")
+            if m.get("cast"):  lines.append(f"    출연진: {m['cast']}")
+            if m.get("crew"):  lines.append(f"    제작진: {m['crew']}")
+        elif source == "kakao_book":
+            lines.append(f"    제목: {m.get('title', '')}")
+            lines.append(f"    저자: {m.get('authors', '')}")
+            lines.append(f"    출판사: {m.get('publisher', '')}")
+            lines.append(f"    출판일: {m.get('date', '')}")
+            if m.get("isbn"):  lines.append(f"    ISBN: {m['isbn']}")
+        elif source == "kmdb":
+            lines.append(f"    영화명: {m.get('title', '')}")
+            lines.append(f"    개봉일: {m.get('date', '')}")
+            lines.append(f"    감독: {m.get('directors', '')}")
+            lines.append(f"    제작사: {m.get('company', '')}")
+            lines.append(f"    장르: {m.get('genre', '')}")
+
+    if not lines:
+        return ""
+    return "\n[외부 데이터베이스 조회 결과]\n" + "\n".join(lines)
 
 
 def analyze_application(
@@ -79,7 +102,7 @@ def analyze_application(
     entries: list[dict],
     files: dict[str, tuple[bytes, str]],
     user_info: dict | None = None,
-    kopis_results: list | None = None,
+    external_results: list | None = None,
 ) -> dict:
     # 사용자 정보
     user_text = ""
@@ -110,10 +133,9 @@ def analyze_application(
     else:
         files_text += "  (첨부 파일 없음)\n"
 
-    # KOPIS 데이터
-    kopis_text = _kopis_section(kopis_results) if kopis_results else ""
+    external_text = _external_section(external_results) if external_results else ""
 
-    prompt_text = user_text + entries_text + files_text + kopis_text + "\n위 데이터를 교차검증해주세요."
+    prompt_text = user_text + entries_text + files_text + external_text + "\n위 데이터를 교차검증해주세요."
     log.debug("[LLM 프롬프트] 분야=%s\n%s", category_name, prompt_text)
 
     user_content = [{"type": "text", "text": prompt_text}]
@@ -145,7 +167,7 @@ def analyze_full_application(
     categories: list[dict],
     files: dict[str, tuple[bytes, str]],
     user_info: dict | None = None,
-    kopis_by_category: dict[str, list] | None = None,
+    external_by_category: dict[str, list] | None = None,
 ) -> dict:
     results_by_category = {}
     all_issues = []
@@ -156,9 +178,9 @@ def analyze_full_application(
         cat_name = cat["name"]
         entries = cat.get("entries", [])
         cat_files = {k: v for k, v in files.items() if k.startswith(f"{cat_name}[")}
-        kopis_results = (kopis_by_category or {}).get(cat_name)
+        external_results = (external_by_category or {}).get(cat_name)
 
-        result = analyze_application(client, cat_name, entries, cat_files, user_info, kopis_results)
+        result = analyze_application(client, cat_name, entries, cat_files, user_info, external_results)
         results_by_category[cat_name] = result
         all_issues.extend(result.get("issues", []))
         all_suggestions.extend(result.get("suggestions", []))

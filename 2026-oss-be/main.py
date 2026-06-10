@@ -28,7 +28,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from ai_review import analyze_full_application
-from kopis import lookup_all_entries
+from kopis import lookup_all_entries as kopis_lookup_all
+from kakao_book import lookup_all_entries as book_lookup_all
+from kmdb import lookup_all_entries as film_lookup_all
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
@@ -50,7 +52,9 @@ DB_PATH = "artpass.db"
 
 
 ai_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-KOPIS_API_KEY = os.environ.get("KOPIS_API_KEY", "")
+KOPIS_API_KEY  = os.environ.get("KOPIS_API_KEY", "")
+KAKAO_API_KEY  = os.environ.get("KAKAO_API_KEY", "")
+KMDB_API_KEY   = os.environ.get("KMDB_API_KEY", "")
 
 
 # ── DB ────────────────────────────────────────────────────────────────────────
@@ -616,17 +620,31 @@ def review_application(
 
 def _kopis_and_ai_blocking(categories, raw_files, user_info) -> dict:
     """블로킹 작업 묶음 — 스레드풀에서 실행됨"""
-    kopis_by_category: dict = {}
-    try:
-        kopis_by_category = lookup_all_entries(KOPIS_API_KEY, categories)
-        log.debug("[KOPIS 결과]\n%s", json.dumps(kopis_by_category, ensure_ascii=False, indent=2))
-    except Exception as e:
-        log.debug("[KOPIS 오류] %s", e)
+    external_by_category: dict = {}
+
+    for label, fn, key in [
+        ("KOPIS",      kopis_lookup_all, KOPIS_API_KEY),
+        ("카카오도서", book_lookup_all,  KAKAO_API_KEY),
+        ("KMDB",       film_lookup_all,  KMDB_API_KEY),
+    ]:
+        if not key:
+            continue
+        try:
+            result = fn(key, categories)
+            for cat, entries in result.items():
+                if any(e is not None for e in entries):
+                    external_by_category.setdefault(cat, [None] * len(entries))
+                    for i, e in enumerate(entries):
+                        if e is not None:
+                            external_by_category[cat][i] = e
+            log.debug("[%s 결과]\n%s", label, json.dumps(result, ensure_ascii=False, indent=2))
+        except Exception as e:
+            log.debug("[%s 오류] %s", label, e)
 
     try:
         return analyze_full_application(
             ai_client, categories, raw_files, user_info,
-            kopis_by_category=kopis_by_category or None,
+            external_by_category=external_by_category or None,
         )
     except Exception as e:
         return {"error": str(e), "is_sufficient": None, "by_category": {}, "all_issues": [], "all_suggestions": []}
