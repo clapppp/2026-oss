@@ -696,7 +696,7 @@ async def submit_application(
         "대중음악":    "POP",
         "일반음악":    "MUS",
     }
-    cat_names = [c["name"] for c in categories]
+    cat_names = [c["name"] for c in meta.get("categories", [])]
     prefix = CATEGORY_PREFIX.get(cat_names[0], "ART") if len(cat_names) == 1 else "MIX"
     suffix = secrets.token_hex(2).upper()  # 랜덤 4자리 16진수
     apply_no = f"{prefix}-{datetime.date.today().strftime('%Y%m%d')}-{suffix}"
