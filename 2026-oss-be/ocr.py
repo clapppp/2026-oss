@@ -22,17 +22,40 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
     return result
 
 
+# 페이지당 이 글자 수 이상이면 텍스트 레이어가 충분하다고 판단
+_MIN_CHARS_PER_PAGE = 50
+
+
 def _extract_pdf(file_bytes: bytes) -> str:
     try:
         import fitz  # pymupdf
         doc = fitz.open(stream=file_bytes, filetype="pdf")
+        page_count = len(doc)
+
+        # 1단계: 텍스트 레이어 추출 시도
+        layer_texts = [page.get_text().strip() for page in doc]
+        total_chars = sum(len(t) for t in layer_texts)
+
+        if total_chars >= _MIN_CHARS_PER_PAGE * page_count:
+            # 텍스트 레이어가 충분 → OCR 생략
+            log.debug("[PDF] 텍스트 레이어 사용 (%d자, OCR 생략)", total_chars)
+            doc.close()
+            return "\n".join(t for t in layer_texts if t)
+
+        # 2단계: 텍스트가 부족한 페이지만 OCR 수행
+        log.debug("[PDF] 텍스트 레이어 부족 (%d자) → OCR 수행", total_chars)
         texts = []
-        for page in doc:
-            # 모든 페이지를 이미지로 렌더링 후 OCR (300 DPI)
-            pix = page.get_pixmap(dpi=300)
-            ocr = _ocr_image_bytes(pix.tobytes("png"), suffix=".png")
-            if ocr:
-                texts.append(ocr)
+        for i, page in enumerate(doc):
+            page_text = layer_texts[i]
+            if len(page_text) >= _MIN_CHARS_PER_PAGE:
+                # 이 페이지는 텍스트 레이어 충분
+                texts.append(page_text)
+            else:
+                # 이미지 기반 페이지 → OCR
+                pix = page.get_pixmap(dpi=300)
+                ocr = _ocr_image_bytes(pix.tobytes("png"), suffix=".png")
+                if ocr:
+                    texts.append(ocr)
         doc.close()
         return "\n".join(texts)
     except Exception:
