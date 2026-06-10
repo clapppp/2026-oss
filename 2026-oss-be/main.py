@@ -228,6 +228,37 @@ def seed_accounts():
 seed_accounts()
 
 
+def _check_external_apis():
+    """서버 시작 시 외부 API 연동 상태를 실제 검색으로 확인."""
+    if KOPIS_API_KEY:
+        from kopis import _search as kopis_search, _date_range
+        stdate, eddate = _date_range("20240101", days=365)
+        results = kopis_search(KOPIS_API_KEY, "햄릿", stdate, eddate)
+        if results:
+            r = results[0]
+            log.info("[KOPIS ✓] '%s' | %s ~ %s | %s",
+                     r.get("title"), r.get("start"), r.get("end"), r.get("venue"))
+        else:
+            log.warning("[KOPIS ✗] 검색 결과 없음 (API 키 또는 네트워크 확인)")
+    else:
+        log.warning("[KOPIS] API 키 없음 — 공연 정보 조회 비활성화")
+
+    if KAKAO_API_KEY:
+        from kakao_book import _search as book_search
+        results = book_search(KAKAO_API_KEY, "채식주의자")
+        if results:
+            r = results[0]
+            log.info("[카카오도서 ✓] '%s' | %s | %s | ISBN %s",
+                     r.get("title"), r.get("authors"), r.get("publisher"), r.get("isbn"))
+        else:
+            log.warning("[카카오도서 ✗] 검색 결과 없음 (API 키 또는 네트워크 확인)")
+    else:
+        log.warning("[카카오도서] API 키 없음 — 도서 정보 조회 비활성화")
+
+
+_check_external_apis()
+
+
 def get_current_user(request: Request):
     token = request.cookies.get(COOKIE_NAME)
     if not token:
