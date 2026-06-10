@@ -30,7 +30,6 @@ from pydantic import BaseModel
 from ai_review import analyze_full_application
 from kopis import lookup_all_entries as kopis_lookup_all
 from kakao_book import lookup_all_entries as book_lookup_all
-from kmdb import lookup_all_entries as film_lookup_all
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
@@ -54,7 +53,6 @@ DB_PATH = "artpass.db"
 ai_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 KOPIS_API_KEY  = os.environ.get("KOPIS_API_KEY", "")
 KAKAO_API_KEY  = os.environ.get("KAKAO_API_KEY", "")
-KMDB_API_KEY   = os.environ.get("KMDB_API_KEY", "")
 
 
 # ── DB ────────────────────────────────────────────────────────────────────────
@@ -625,7 +623,6 @@ def _kopis_and_ai_blocking(categories, raw_files, user_info) -> dict:
     for label, fn, key in [
         ("KOPIS",      kopis_lookup_all, KOPIS_API_KEY),
         ("카카오도서", book_lookup_all,  KAKAO_API_KEY),
-        ("KMDB",       film_lookup_all,  KMDB_API_KEY),
     ]:
         if not key:
             continue
