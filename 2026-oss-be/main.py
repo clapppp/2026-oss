@@ -479,15 +479,35 @@ def update_profile(body: UpdateProfileBody, current_user: dict = Depends(get_cur
     return ok(user_schema(u))
 
 
+MAX_PHOTO_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "GIF", "WEBP"}
+FORMAT_EXT = {"JPEG": ".jpg", "PNG": ".png", "GIF": ".gif", "WEBP": ".webp"}
+
 @app.post("/api/user/photo")
 async def upload_photo(photo: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
-    # 확장자 검증
-    ext = os.path.splitext(photo.filename or "")[1].lower()
-    if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
-        ext = ".jpg"
+    content = await photo.read()
+
+    # 크기 검증
+    if len(content) > MAX_PHOTO_SIZE:
+        raise HTTPException(status_code=400, detail="사진 크기는 5MB 이하여야 합니다")
+
+    # 실제 이미지 포맷 검증 (magic bytes 기반)
+    try:
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(content))
+        fmt = img.format
+        if fmt not in ALLOWED_IMAGE_FORMATS:
+            raise HTTPException(status_code=400, detail="JPG, PNG, GIF, WEBP 형식만 업로드할 수 있습니다")
+        img.verify()
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="유효하지 않은 이미지 파일입니다")
+
+    ext = FORMAT_EXT.get(fmt, ".jpg")
     filename = f"{current_user['id']}{ext}"
     filepath = os.path.join(PHOTOS_DIR, filename)
-    content = await photo.read()
     with open(filepath, "wb") as f:
         f.write(content)
     url = f"/photos/{filename}"
