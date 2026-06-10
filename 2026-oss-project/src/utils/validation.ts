@@ -1,139 +1,190 @@
 import { CATEGORY_FORM_CONFIG, CATEGORY_META } from "../constants/categoryFormConfig";
 
-// ── 연극: 역할별 최소 편수 ─────────────────────────────────────────────────────
-const THEATER_ROLE_MIN: Record<string, { min: number; unit: string }> = {
-  "출연":                { min: 3, unit: "편" },
-  "연출":                { min: 1, unit: "회" },
-  "희곡집필 (공연 통해)": { min: 1, unit: "편" },
-  "희곡집필 (잡지 등)":   { min: 1, unit: "편" },
-  "비평":                { min: 3, unit: "편" },
+// ─────────────────────────────────────────────────────────────────────────────
+// 분야별 비율 기준표  (key: 폼 필드값, min: 기준 하한, unit: 단위, label: 표시명)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type MinEntry = { min: number; unit: string; label?: string };
+
+// 문학 — genre 필드 기준
+const LIT_GENRE_MIN: Record<string, MinEntry> = {
+  "시/시조":          { min: 5, unit: "편",  label: "시/시조" },
+  "수필":             { min: 5, unit: "편",  label: "수필" },
+  "소설 (단편)":      { min: 3, unit: "편",  label: "소설(단편)" },
+  "소설 (장편·기타)": { min: 1, unit: "편",  label: "소설(장편·기타)" },
+  "평전":             { min: 1, unit: "편",  label: "평전" },
+  "희곡":             { min: 1, unit: "편",  label: "희곡" },
+  "평론":             { min: 3, unit: "편",  label: "평론" },
+  "문학작품집":       { min: 1, unit: "권",  label: "문학작품집" },
 };
 
-// ── 문학: 세부장르별 최소 편수 ────────────────────────────────────────────────
-const LIT_GENRE_MIN: Record<string, { min: number; unit: string; label: string }> = {
-  "시/시조":          { min: 5, unit: "편", label: "시/시조" },
-  "수필":             { min: 5, unit: "편", label: "수필" },
-  "소설 (단편)":      { min: 3, unit: "편", label: "소설(단편)" },
-  "소설 (장편·기타)": { min: 1, unit: "편", label: "소설(장편·기타)" },
-  "평전":             { min: 1, unit: "편", label: "평전" },
-  "희곡":             { min: 1, unit: "편", label: "희곡" },
-  "평론":             { min: 3, unit: "편", label: "평론" },
-  "문학작품집":       { min: 1, unit: "권", label: "문학작품집" },
+// 연극 — role 필드 기준
+const THEATER_ROLE_MIN: Record<string, MinEntry> = {
+  "출연":                  { min: 3, unit: "편" },
+  "연출":                  { min: 1, unit: "회" },
+  "희곡집필 (공연 통해)":  { min: 1, unit: "편" },
+  "희곡집필 (잡지 등)":    { min: 1, unit: "편" },
+  "비평":                  { min: 3, unit: "편" },
+  "비평집 출간":           { min: 1, unit: "권" },
 };
 
-export interface CategoryProgress {
-  /** 비율 기반 분야 여부 */
-  isRatioBased: boolean;
-  /** 비율 합계 (0.0 ~ 1.0+) */
-  ratio: number;
-  /** 기준 충족 여부 */
-  meetsMin: boolean;
-  /** 최대 입력 가능 편수 */
-  maxEntries: number;
-  /** 역할·장르별 현황 태그 배열 */
-  tags: { label: string; count: number; min: number }[];
+// 미술 계열(디자인/공예·일반미술·전통미술·사진·건축) — method 필드 기준
+const ART_METHOD_MIN: Record<string, MinEntry> = {
+  "매체발표 / 전시": { min: 5, unit: "회" },
+  "개인전":          { min: 1, unit: "회" },
+  "작품집 출간":     { min: 1, unit: "권" },
+  "비평 발표":       { min: 5, unit: "편" },
+  "비평집 출간":     { min: 1, unit: "권" },
+};
+
+// 무용 — role 필드 기준
+const DANCE_ROLE_MIN: Record<string, MinEntry> = {
+  "출연":        { min: 3, unit: "편" },
+  "안무":        { min: 1, unit: "회" },
+  "비평 발표":   { min: 3, unit: "편" },
+  "비평집 출간": { min: 1, unit: "권" },
+};
+
+// 영화 — role 필드 기준
+const FILM_ROLE_MIN: Record<string, MinEntry> = {
+  "출연":            { min: 3, unit: "편" },
+  "연출":            { min: 1, unit: "회" },
+  "시나리오 집필":   { min: 1, unit: "편" },
+  "비평 발표":       { min: 3, unit: "편" },
+  "비평집 출간":     { min: 1, unit: "권" },
+};
+
+// 방송(연예) — role 필드 기준
+const BROADCAST_ROLE_MIN: Record<string, MinEntry> = {
+  "방송 출연":       { min: 3, unit: "편" },
+  "방송 연출/진행":  { min: 1, unit: "편" },
+  "패션쇼 출연":     { min: 3, unit: "회" },
+  "광고 출연":       { min: 3, unit: "편" },
+  "연예 공연 출연":  { min: 3, unit: "편" },
+  "대본 발표":       { min: 1, unit: "편" },
+  "비평 발표":       { min: 3, unit: "편" },
+  "비평집 출간":     { min: 1, unit: "권" },
+};
+
+// 음악 계열(국악·대중음악·일반음악) — type 필드 기준
+const MUSIC_TYPE_MIN: Record<string, MinEntry> = {
+  "공연/방송 출연":       { min: 3, unit: "편" },
+  "악곡 창작 발표":       { min: 3, unit: "곡" },
+  "음반 발매":            { min: 1, unit: "장" },
+  "지휘":                 { min: 3, unit: "회" },
+  "비평 발표":            { min: 3, unit: "편" },
+  "비평집/작품집 출간":   { min: 1, unit: "권" },
+};
+
+// 만화 — method 필드 기준
+const MANHWA_METHOD_MIN: Record<string, MinEntry> = {
+  "단편 발표":          { min: 5, unit: "편" },
+  "연재 (6개월 이상)":  { min: 1, unit: "편" },
+  "작품집 출간":        { min: 1, unit: "권" },
+  "전시":               { min: 5, unit: "회" },
+  "비평 발표":          { min: 5, unit: "편" },
+  "비평집 출간":        { min: 1, unit: "권" },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 비율 기반 분야 설정 테이블
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ART_CATS = new Set(["디자인 / 공예", "일반미술", "전통미술", "사진", "건축"]);
+const MUSIC_CATS = new Set(["국악", "대중음악", "일반음악"]);
+
+type RatioConfig = { minMap: Record<string, MinEntry>; fieldKey: string };
+
+function getRatioConfig(cat: string): RatioConfig | null {
+  if (cat === "문학")  return { minMap: LIT_GENRE_MIN,       fieldKey: "genre" };
+  if (cat === "연극")  return { minMap: THEATER_ROLE_MIN,    fieldKey: "role" };
+  if (cat === "무용")  return { minMap: DANCE_ROLE_MIN,      fieldKey: "role" };
+  if (cat === "영화")  return { minMap: FILM_ROLE_MIN,       fieldKey: "role" };
+  if (cat === "방송")  return { minMap: BROADCAST_ROLE_MIN,  fieldKey: "role" };
+  if (cat === "만화")  return { minMap: MANHWA_METHOD_MIN,   fieldKey: "method" };
+  if (ART_CATS.has(cat))   return { minMap: ART_METHOD_MIN,  fieldKey: "method" };
+  if (MUSIC_CATS.has(cat)) return { minMap: MUSIC_TYPE_MIN,  fieldKey: "type" };
+  return null;
 }
 
-/** 비율 합계 방식: 각 그룹의 (실제 수 / 최소 수) 합이 1 이상이면 통과 */
-function ratioSum(counts: Record<string, number>, minMap: Record<string, number>): number {
+// ─────────────────────────────────────────────────────────────────────────────
+// 공통 유틸
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ratioSum(counts: Record<string, number>, minMap: Record<string, MinEntry>): number {
   let total = 0;
   for (const [key, count] of Object.entries(counts)) {
-    const min = minMap[key];
-    if (min) total += count / min;
+    const m = minMap[key];
+    if (m) total += count / m.min;
   }
   return total;
 }
 
-function validateTheater(entries: Record<string, string>[]): string | null {
-  if (entries.length === 0 || entries.every((e) => !e.role)) {
-    return "[연극] 실적을 1편 이상 입력해 주세요.";
-  }
-
-  const roleCounts: Record<string, number> = {};
-  for (const e of entries) {
-    if (e.role) roleCounts[e.role] = (roleCounts[e.role] ?? 0) + 1;
-  }
-
-  const minMap = Object.fromEntries(
-    Object.entries(THEATER_ROLE_MIN).map(([k, v]) => [k, v.min]),
-  );
-  const ratio = ratioSum(roleCounts, minMap);
-
-  if (ratio < 1) {
-    const detail = Object.entries(roleCounts)
-      .map(([role, cnt]) => {
-        const min = THEATER_ROLE_MIN[role]?.min;
-        return min ? `${role} ${cnt}/${min}` : null;
-      })
-      .filter(Boolean)
-      .join(", ");
-    return `[연극] 실적이 부족합니다. (비율 합계 ${ratio.toFixed(2)} / 1.00 필요 — ${detail})`;
-  }
-
-  return null;
-}
-
-function validateLiterature(entries: Record<string, string>[]): string | null {
-  if (entries.length === 0 || entries.every((e) => !e.genre)) {
-    return "[문학] 실적을 1편 이상 입력해 주세요.";
-  }
-
+function countsByField(entries: Record<string, string>[], fieldKey: string): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const e of entries) {
-    if (e.genre) counts[e.genre] = (counts[e.genre] ?? 0) + 1;
+    const v = e[fieldKey];
+    if (v) counts[v] = (counts[v] ?? 0) + 1;
   }
-
-  const minMap = Object.fromEntries(
-    Object.entries(LIT_GENRE_MIN).map(([k, v]) => [k, v.min]),
-  );
-  const ratio = ratioSum(counts, minMap);
-
-  if (ratio < 1) {
-    const detail = Object.entries(counts)
-      .map(([key, cnt]) => {
-        const cfg = LIT_GENRE_MIN[key];
-        return cfg ? `${cfg.label} ${cnt}/${cfg.min}` : null;
-      })
-      .filter(Boolean)
-      .join(", ");
-    return `[문학] 실적이 부족합니다. (비율 합계 ${ratio.toFixed(2)} / 1.00 필요 — ${detail})`;
-  }
-
-  return null;
+  return counts;
 }
 
-/** 분야별 진행 현황 반환 (ApplyPage 표시용) */
+// ─────────────────────────────────────────────────────────────────────────────
+// 진행 현황 (ApplyPage 표시용)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CategoryProgress {
+  isRatioBased: boolean;
+  ratio: number;
+  meetsMin: boolean;
+  maxEntries: number;
+  tags: { label: string; count: number; min: number }[];
+}
+
 export function getCategoryProgress(
   cat: string,
   entries: Record<string, string>[],
 ): CategoryProgress {
-  if (cat === "연극") {
-    const counts: Record<string, number> = {};
-    for (const e of entries) {
-      if (e.role) counts[e.role] = (counts[e.role] ?? 0) + 1;
-    }
-    const minMap = Object.fromEntries(Object.entries(THEATER_ROLE_MIN).map(([k, v]) => [k, v.min]));
-    const ratio = ratioSum(counts, minMap);
-    const tags = Object.entries(counts)
-      .filter(([role]) => THEATER_ROLE_MIN[role])
-      .map(([role, count]) => ({ label: role, count, min: THEATER_ROLE_MIN[role].min }));
-    return { isRatioBased: true, ratio, meetsMin: ratio >= 1, maxEntries: 20, tags };
+  const cfg = getRatioConfig(cat);
+  if (!cfg) {
+    return { isRatioBased: false, ratio: 0, meetsMin: false, maxEntries: 0, tags: [] };
   }
 
-  if (cat === "문학") {
-    const counts: Record<string, number> = {};
-    for (const e of entries) {
-      if (e.genre) counts[e.genre] = (counts[e.genre] ?? 0) + 1;
-    }
-    const minMap = Object.fromEntries(Object.entries(LIT_GENRE_MIN).map(([k, v]) => [k, v.min]));
-    const ratio = ratioSum(counts, minMap);
-    const tags = Object.entries(counts)
-      .filter(([genre]) => LIT_GENRE_MIN[genre])
-      .map(([genre, count]) => ({ label: LIT_GENRE_MIN[genre].label, count, min: LIT_GENRE_MIN[genre].min }));
-    return { isRatioBased: true, ratio, meetsMin: ratio >= 1, maxEntries: 20, tags };
+  const counts = countsByField(entries, cfg.fieldKey);
+  const ratio = ratioSum(counts, cfg.minMap);
+  const tags = Object.entries(counts)
+    .filter(([k]) => cfg.minMap[k])
+    .map(([k, count]) => ({
+      label: cfg.minMap[k].label ?? k,
+      count,
+      min: cfg.minMap[k].min,
+    }));
+
+  return { isRatioBased: true, ratio, meetsMin: ratio >= 1, maxEntries: 20, tags };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 유효성 검사
+// ─────────────────────────────────────────────────────────────────────────────
+
+function validateRatioCat(cat: string, entries: Record<string, string>[]): string | null {
+  const cfg = getRatioConfig(cat)!;
+  const counts = countsByField(entries, cfg.fieldKey);
+
+  if (Object.keys(counts).length === 0) {
+    return `[${cat}] 실적을 1편 이상 입력해 주세요.`;
   }
 
-  return { isRatioBased: false, ratio: 0, meetsMin: false, maxEntries: 0, tags: [] };
+  const ratio = ratioSum(counts, cfg.minMap);
+  if (ratio < 1) {
+    const detail = Object.entries(counts)
+      .filter(([k]) => cfg.minMap[k])
+      .map(([k, cnt]) => `${cfg.minMap[k].label ?? k} ${cnt}/${cfg.minMap[k].min}`)
+      .join(", ");
+    return `[${cat}] 실적이 부족합니다. (비율 합계 ${ratio.toFixed(2)} / 1.00 필요${detail ? ` — ${detail}` : ""})`;
+  }
+
+  return null;
 }
 
 export function validateApplicationStep2(
@@ -148,34 +199,28 @@ export function validateApplicationStep2(
     if (!fields || !meta) continue;
     const entries = categoryForms[cat] ?? [{}];
 
-    // ── 분야별 편수 검사 ───────────────────────────────────────────────────────
-    if (cat === "연극") {
-      const err = validateTheater(entries);
-      if (err) return err;
-    } else if (cat === "문학") {
-      const err = validateLiterature(entries);
+    // ── 편수 검사 ─────────────────────────────────────────────────────────────
+    if (getRatioConfig(cat)) {
+      const err = validateRatioCat(cat, entries);
       if (err) return err;
     } else {
-      // 만화 연재 특례
-      const isManhwaSerial = cat === "만화" && entries.some((e) => e.method === "연재");
-      if (!isManhwaSerial && entries.length < meta.minCount) {
+      // 단순 카운트 분야 (공연 등)
+      if (entries.length < meta.minCount) {
         return `[${cat}] 실적을 ${meta.minCount}${meta.unit} 이상 입력해 주세요. (현재 ${entries.length}${meta.unit})`;
       }
     }
 
-    // ── 필수 항목 입력 검사 ────────────────────────────────────────────────────
+    // ── 필수 항목 입력 검사 ───────────────────────────────────────────────────
     for (let i = 0; i < entries.length; i++) {
       for (const field of fields) {
         // 만화: 연재 아닐 때 연재일 스킵
         if (
           cat === "만화" &&
-          (field.key === "serialStart" || field.key === "serialEnd") &&
-          entries[i].method !== "연재"
+          (field.key === "serialStart" || field.key === "serialEnd")
         ) continue;
 
-        // optional 필드는 빈 값 허용
+        // optional 필드
         if (field.optional) {
-          // ISBN: 입력된 경우에만 형식 검사
           if (field.key === "isbn" && entries[i]["isbn"]?.trim()) {
             const digits = entries[i]["isbn"].replace(/[^0-9]/g, "");
             if (digits.length !== 13) {
