@@ -965,6 +965,28 @@ async def save_draft_api(request: Request, current_user: dict = Depends(get_curr
     return ok({"savedAt": now, "fileInfos": file_infos})
 
 
+@app.post("/api/admin/reset-test-db")
+def reset_test_db(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="관리자만 가능합니다")
+    import shutil as _shutil
+    conn = get_db()
+    conn.execute("DELETE FROM applications")
+    conn.execute("DELETE FROM drafts WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%@test.artpass.kr')")
+    conn.execute("DELETE FROM users WHERE email LIKE '%@test.artpass.kr'")
+    conn.commit()
+    conn.close()
+    # 테스트 계정 업로드 파일 정리
+    for d in (APPLICATION_FILES_DIR, DRAFT_FILES_DIR):
+        if os.path.isdir(d):
+            for item in os.listdir(d):
+                try:
+                    _shutil.rmtree(os.path.join(d, item))
+                except Exception:
+                    pass
+    return ok({"message": "테스트 DB 초기화 완료"})
+
+
 @app.delete("/api/drafts")
 def delete_draft_api(current_user: dict = Depends(get_current_user)):
     import shutil as _shutil
