@@ -80,8 +80,8 @@ export default function App() {
     setPendingPage(null);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setPage("main");
   };
 

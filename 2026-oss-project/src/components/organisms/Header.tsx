@@ -67,7 +67,7 @@ export default function Header({
                   <a
                     href={item.href ?? "#"}
                     className={styles.utilityLink}
-                    onClick={item.onClick}
+                    onClick={item.onClick ? (e) => { e.preventDefault(); item.onClick!(); } : undefined}
                   >
                     {item.icon && (
                       <span className={styles.utilityIcon} aria-hidden="true">

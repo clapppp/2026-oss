@@ -695,6 +695,24 @@ export default function ApplicationStatusPage({ onReapply }: { onReapply?: () =>
       .finally(() => setLoading(false));
   }, []);
 
+  // AI 판독중인 건이 있으면 5초마다 자동 갱신
+  const hasPending = applications.some((a) => !a.aiFeedback && a.status === "심사중");
+  useEffect(() => {
+    if (!hasPending) return;
+    const id = setInterval(async () => {
+      try {
+        const updated = await getApplications();
+        setApplications(updated);
+        // 열려있는 상세 패널도 최신 데이터로 교체
+        setSelected((prev) => {
+          if (!prev) return prev;
+          return updated.find((a) => a.id === prev.id) ?? prev;
+        });
+      } catch { /* 무시 */ }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [hasPending]);
+
   return (
     <div className={`${styles.layout} ${selected ? styles.withDetail : ""}`}>
       <div className={styles.listPanel}>

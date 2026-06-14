@@ -22,7 +22,7 @@ interface AuthContextValue {
   isLoggedIn: boolean;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
 }
 
@@ -62,8 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return userData;
   };
 
-  const logout = () => {
-    void apiLogout();
+  const logout = async () => {
+    await apiLogout();
     clearSession();
   };
 

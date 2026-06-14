@@ -39,8 +39,17 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
     });
 
     if (res.status === 401) {
-      window.dispatchEvent(new CustomEvent("artpass:unauthorized"));
-      throw new ApiError(401, "인증이 만료되었습니다. 다시 로그인해 주세요.");
+      const body = await res.text().catch(() => "");
+      let message = "인증이 만료되었습니다. 다시 로그인해 주세요.";
+      try {
+        const parsed = JSON.parse(body);
+        message = parsed.detail ?? parsed.message ?? message;
+      } catch { /* ignore */ }
+      // 로그인 엔드포인트의 401은 인증 만료가 아닌 자격증명 오류 — 세션 초기화 불필요
+      if (path !== "/api/auth/login") {
+        window.dispatchEvent(new CustomEvent("artpass:unauthorized"));
+      }
+      throw new ApiError(401, message);
     }
 
     if (!res.ok) {

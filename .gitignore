@@ -28,3 +28,5 @@ test-files/
 *.suo
 *.sw?
 *.key
+
+00_실험용_데이터셋/
